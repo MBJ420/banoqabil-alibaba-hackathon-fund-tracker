@@ -25,8 +25,6 @@ import json
 import socket
 from datetime import datetime, timedelta, timezone
 
-# Set global socket timeout (e.g., 20s) to prevent feedparser from hanging indefinitely
-socket.setdefaulttimeout(20)
 from bs4 import BeautifulSoup
 from sqlalchemy.orm import Session
 from dotenv import load_dotenv
@@ -171,7 +169,14 @@ def _fetch_rss(seen_urls: set) -> list[dict]:
     articles = []
     for feed_cfg in RSS_FEEDS:
         try:
-            feed = feedparser.parse(feed_cfg["url"])
+            # Bound feedparser's network call with a scoped socket timeout so a
+            # slow/hanging feed can't freeze the whole process. Restored after.
+            _prev_timeout = socket.getdefaulttimeout()
+            socket.setdefaulttimeout(15)
+            try:
+                feed = feedparser.parse(feed_cfg["url"])
+            finally:
+                socket.setdefaulttimeout(_prev_timeout)
             for entry in feed.entries:
                 url = getattr(entry, "link", "").strip()
                 if not url or url in seen_urls:
@@ -377,36 +382,44 @@ def run_news_pipeline(force: bool = False):
 
         logger.info(f"Fetched {len(all_articles)} unique relevant articles.")
 
-        # Overwrite NewsArticle table (keep WorldContextEntry untouched)
-        db.query(NewsArticle).delete()
-        db.commit()
+        # Only replace the NewsArticle table when we actually fetched new
+        # articles. If every source fails (network error, API limits, etc.),
+        # we keep the existing data instead of wiping it to empty.
+        if all_articles:
+            # Overwrite NewsArticle table (keep WorldContextEntry untouched)
+            db.query(NewsArticle).delete()
+            db.commit()
 
-        committed_articles = []
-        for art in all_articles:
-            try:
-                article_obj = NewsArticle(
-                    title=art["title"],
-                    url=art["url"],
-                    source=art["source"],
-                    published_at=art.get("published_at"),
-                    summary=art.get("summary"),
-                    tags=art.get("tags", []),
-                    relevance_score=art.get("relevance_score", 0.5),
-                )
-                db.add(article_obj)
-                db.flush()
-                committed_articles.append(article_obj)
-            except Exception as e:
-                logger.warning(f"Skipping duplicate article: {art.get('url')} — {e}")
-                db.rollback()
+            committed_articles = []
+            for art in all_articles:
+                try:
+                    article_obj = NewsArticle(
+                        title=art["title"],
+                        url=art["url"],
+                        source=art["source"],
+                        published_at=art.get("published_at"),
+                        summary=art.get("summary"),
+                        tags=art.get("tags", []),
+                        relevance_score=art.get("relevance_score", 0.5),
+                    )
+                    db.add(article_obj)
+                    db.flush()
+                    committed_articles.append(article_obj)
+                except Exception as e:
+                    logger.warning(f"Skipping duplicate article: {art.get('url')} — {e}")
+                    db.rollback()
 
-        db.commit()
+            db.commit()
 
-        # Update metadata
-        meta.last_refreshed_at = datetime.utcnow()
-        meta.refresh_status = "idle"
-        db.commit()
-        logger.info("News pipeline completed successfully.")
+            # Update metadata
+            meta.last_refreshed_at = datetime.utcnow()
+            meta.refresh_status = "idle"
+            db.commit()
+            logger.info("News pipeline completed successfully.")
+        else:
+            logger.warning("News fetch returned 0 articles — keeping existing news data.")
+            meta.refresh_status = "idle"
+            db.commit()
 
     except Exception as e:
         logger.error(f"News pipeline failed: {e}", exc_info=True)

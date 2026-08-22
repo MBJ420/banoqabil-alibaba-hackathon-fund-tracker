@@ -1,6 +1,9 @@
+import logging
 from sqlalchemy.orm import Session
 from . import models, schemas
 from passlib.context import CryptContext
+
+logger = logging.getLogger(__name__)
 
 pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
 
