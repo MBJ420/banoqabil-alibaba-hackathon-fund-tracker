@@ -73,17 +73,24 @@ class PDFHandler(FileSystemEventHandler):
             if not user:
                 logger.error(f"User {username} not found in database. Skipping {file_path}")
                 return
+
+            # Look up the user's PDF password for this bank (if any)
+            bank_config = crud.get_bank_config(db, user.id, bank)
+            pdf_password = bank_config.pdf_password if bank_config else None
                 
             # Call the parser logic
-            data = pdf_parser.parse_statement(file_path, bank)
+            data = pdf_parser.parse_statement(file_path, bank, password=pdf_password)
             if "error" in data:
-                logger.error(f"Failed to parse {file_path}: {data['error']}")
+                if data["error"] == "PDF_PASSWORD_REQUIRED":
+                    logger.warning(f"Skipping {file_path}: {data.get('message')} Set the password in the app Settings.")
+                else:
+                    logger.error(f"Failed to parse {file_path}: {data['error']}")
                 return
                 
             # Save to DB
             result = crud.save_statement(db, user_id=user.id, parsed_data=data, file_path=file_path)
             
-            if result.get("status") == "success":
+            if result.get("status") in ("success", "updated"):
                 logger.info(f"Successfully processed and saved {file_path}. Statement ID: {result.get('statement_id')}")
             else:
                 logger.info(f"Skipped {file_path}: {result.get('message')}")
@@ -92,6 +99,7 @@ class PDFHandler(FileSystemEventHandler):
             logger.error(f"Error processing {file_path}: {e}")
         finally:
             db.close()
+
 
 class Watcher:
     def __init__(self, directory_to_watch):

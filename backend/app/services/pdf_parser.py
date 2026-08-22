@@ -3,23 +3,42 @@ import re
 from datetime import datetime
 from typing import Dict, Any
 import logging
+from app.database import SessionLocal
+from app.models import ScraperStatus
 
 logger = logging.getLogger(__name__)
+
+def _set_status(bank_name: str, healthy: bool, error_msg: str = None):
+    try:
+        db = SessionLocal()
+        scraper_name = f"pdf_parser_{bank_name.lower()}"
+        status = db.query(ScraperStatus).filter(ScraperStatus.scraper_name == scraper_name).first()
+        if not status:
+            status = ScraperStatus(scraper_name=scraper_name)
+            db.add(status)
+        status.is_healthy = healthy
+        status.error_message = error_msg
+        status.requires_maintenance = not healthy
+        status.last_run_at = datetime.utcnow()
+        db.commit()
+        db.close()
+    except:
+        pass
 
 class PDFParser:
     def __init__(self):
         pass
 
-    def parse_statement(self, file_path: str, bank_name: str) -> Dict[str, Any]:
+    def parse_statement(self, file_path: str, bank_name: str, password: str | None = None) -> Dict[str, Any]:
         """
         Parses a PDF statement based on the bank name.
         """
         if bank_name.lower() in ["meezan", "hbl", "atlas", "faysal"]:
-            return self._generic_parse(file_path, bank_name.capitalize())
+            return self._generic_parse(file_path, bank_name.capitalize(), password=password)
         else:
             return {"error": f"Bank {bank_name} not supported"}
 
-    def _generic_parse(self, file_path: str, bank_name: str) -> Dict[str, Any]:
+    def _generic_parse(self, file_path: str, bank_name: str, password: str | None = None) -> Dict[str, Any]:
         """
         Extracts data from funds statement using generalized regex heuristics.
         """
@@ -33,7 +52,8 @@ class PDFParser:
         }
         
         try:
-            with pdfplumber.open(file_path) as pdf:
+            open_kwargs = {"password": password} if password else {}
+            with pdfplumber.open(file_path, **open_kwargs) as pdf:
                 full_text = ""
                 for page in pdf.pages:
                     text = page.extract_text()
@@ -260,9 +280,17 @@ class PDFParser:
                         data["summary"]["total_gain_loss"] = sum(h.get("gain_loss", 0.0) for h in data["holdings"])
                 
         except Exception as e:
-            logger.error(f"Error parsing {file_path}: {str(e)}")
-            return {"error": str(e)}
+            err_str = str(e)
+            # Provide a user-friendly message for password-protected PDFs
+            if "PDFPasswordIncorrect" in err_str or "PdfminerException" in err_str or "password" in err_str.lower():
+                logger.error(f"Password-protected PDF could not be opened: {file_path}")
+                # Don't mark as unhealthy just because of a password issue
+                return {"error": "PDF_PASSWORD_REQUIRED", "message": f"This {bank_name} statement is password-protected. Please set your PDF password in Settings."}
+            logger.error(f"Error parsing {file_path}: {err_str}")
+            _set_status(bank_name, False, err_str)
+            return {"error": err_str}
             
+        _set_status(bank_name, True)
         return data
 
 parser = PDFParser()

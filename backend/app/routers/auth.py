@@ -4,13 +4,12 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from .. import crud, models, schemas, database
-from ..utils import create_access_token, get_current_user # Need to implement utils
+from ..utils import create_access_token, get_current_user
+from ..config import PDF_DATA_DIR
 
 router = APIRouter(
     tags=["authentication"]
 )
-
-from pathlib import Path
 
 @router.post("/token", response_model=schemas.Token)
 async def login_for_access_token(
@@ -25,10 +24,9 @@ async def login_for_access_token(
             headers={"WWW-Authenticate": "Bearer"},
         )
     
-    # Ensure data folders exist on login
+    # Ensure data folders exist on login (idempotent — safe to call every time)
     try:
-        base_data_path = Path("C:/Users/Jameel Akhtar/data")
-        user_data_path = base_data_path / user.username
+        user_data_path = PDF_DATA_DIR / user.username
         banks = ["meezan", "hbl", "faysal", "atlas"]
         
         for bank in banks:

@@ -1,30 +1,56 @@
-# Database
-fundtracker.db
-*.sqlite3
+# ─── Database (never commit the real DB — everyone starts fresh) ──────────────
 *.db
+*.sqlite3
+fundtracker.db
 
-# Environment variables
+# ─── PDF Drop Folder (personal financial documents — never commit) ────────────
+# Each team member's PDFs live here locally. Never share these via Git.
+Fund Tracker PDF Data/
+
+# ─── Secret keys & environment variables ─────────────────────────────────────
+# IMPORTANT: Never commit .env — it contains your Gemini API key!
 .env
 .env.local
+.env.*.local
 
-# Debug files
-*_dump.html
-*_dump.txt
-*.log
-
-# Python
+# ─── Python ──────────────────────────────────────────────────────────────────
 __pycache__/
-*.pyc
+*.py[cod]
+*.pyo
 venv/
-.pytest_cache/
-
-# Node
-node_modules/
+.venv/
+*.egg-info/
 dist/
 build/
+.pytest_cache/
+
+# ─── Node / Frontend ─────────────────────────────────────────────────────────
+node_modules/
+frontend/dist/
+frontend/build/
 .npm/
 
-# OS Files
+# ─── Electron build output ────────────────────────────────────────────────────
+out/
+release/
+
+# ─── OS junk ─────────────────────────────────────────────────────────────────
 .DS_Store
 Thumbs.db
-gemini_app_guide.txt
+desktop.ini
+
+# ─── Logs ────────────────────────────────────────────────────────────────────
+*.log
+logs/
+
+# ─── IDE files (optional — remove if your team uses the same IDE) ────────────
+.vscode/
+.idea/
+*.swp
+
+# ─── Playwright browser cache ─────────────────────────────────────────────────
+playwright/.cache/
+
+# ─── Alembic auto-generated migration backup ─────────────────────────────────
+# (keep the migrations folder itself, just ignore __pycache__ inside it)
+backend/alembic/versions/__pycache__/

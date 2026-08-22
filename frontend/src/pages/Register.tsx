@@ -23,14 +23,13 @@ const Register = () => {
 
     return (
         <div className="flex items-center justify-center min-h-screen bg-midnight text-text-primary">
-            <div className="absolute top-0 left-0 w-full h-96 bg-electric-blue/5 blur-[120px] pointer-events-none" />
-            <div className="w-full max-w-md p-8 space-y-6 bg-surface border border-white/5 rounded-2xl shadow-2xl relative z-10">
+            <div className="w-full max-w-md p-8 space-y-6 bg-surface border border-white/10 rounded-2xl shadow-2xl relative z-10">
                 <div className="flex flex-col items-center">
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-electric-blue to-neon-purple flex items-center justify-center shadow-lg shadow-electric-blue/20 mb-4 text-white">
+                    <div className="w-12 h-12 rounded-xl bg-emerald-600 flex items-center justify-center shadow-lg shadow-emerald-500/20 mb-4 text-white">
                         <User size={24} />
                     </div>
-                    <h2 className="text-3xl font-bold text-center tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">FundTracker</h2>
-                    <h3 className="text-sm text-center text-text-secondary mt-1">Create your terminal access</h3>
+                    <h2 className="text-3xl font-bold text-center tracking-tight text-white">FundTracker</h2>
+                    <h3 className="text-sm text-center text-text-secondary mt-1 font-medium">Create your portfolio account</h3>
                 </div>
 
                 {error && <div className="p-3 text-danger bg-danger/10 border border-danger/20 rounded-xl text-center text-sm">{error}</div>}
@@ -60,13 +59,13 @@ const Register = () => {
                     </div>
                     <button
                         type="submit"
-                        className="w-full p-3 font-bold text-white bg-electric-blue rounded-xl hover:bg-neon-purple transition-colors shadow-lg shadow-electric-blue/20 mt-2"
+                        className="w-full p-3 font-bold text-white bg-emerald-600 rounded-xl hover:bg-emerald-700 transition-colors shadow-lg shadow-emerald-500/20 mt-2"
                     >
-                        Create Account
+                        Register
                     </button>
                 </form>
                 <p className="text-center text-sm text-text-secondary">
-                    Already have an account? <Link to="/login" className="text-electric-blue hover:text-neon-purple transition-colors font-medium">Initialize Session</Link>
+                    Already have an account? <Link to="/login" className="text-emerald-500 hover:text-emerald-400 transition-colors font-semibold">Sign In</Link>
                 </p>
             </div>
         </div>

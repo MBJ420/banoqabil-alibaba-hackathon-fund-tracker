@@ -138,3 +138,34 @@ def delete_statement(db: Session, file_path: str) -> bool:
     return False
 
 
+def get_bank_config(db: Session, user_id: int, bank_name: str) -> models.UserBankConfig | None:
+    """Returns the bank config (incl. pdf_password) for a given user+bank."""
+    return db.query(models.UserBankConfig).filter(
+        models.UserBankConfig.user_id == user_id,
+        models.UserBankConfig.bank_name == bank_name.lower()
+    ).first()
+
+
+def upsert_bank_config(db: Session, user_id: int, bank_name: str, pdf_password: str | None) -> models.UserBankConfig:
+    """Creates or updates the PDF password for a user's bank."""
+    config = get_bank_config(db, user_id, bank_name)
+    if config:
+        config.pdf_password = pdf_password
+    else:
+        config = models.UserBankConfig(
+            user_id=user_id,
+            bank_name=bank_name.lower(),
+            pdf_password=pdf_password
+        )
+        db.add(config)
+    db.commit()
+    db.refresh(config)
+    return config
+
+
+def get_all_bank_configs(db: Session, user_id: int) -> list[models.UserBankConfig]:
+    """Returns all bank configs for a user."""
+    return db.query(models.UserBankConfig).filter(
+        models.UserBankConfig.user_id == user_id
+    ).all()
+

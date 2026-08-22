@@ -7,18 +7,18 @@
   --color-black-50: rgba(0, 0, 0, 0.5);
   --color-success-10: rgba(16, 185, 129, 0.1);
   --color-danger-10: rgba(239, 68, 68, 0.1);
-  --color-neon-purple-5: rgba(139, 92, 246, 0.05);
-  --color-neon-purple-10: rgba(139, 92, 246, 0.1);
-  --color-neon-purple-20: rgba(139, 92, 246, 0.2);
-  --color-neon-purple-30: rgba(139, 92, 246, 0.3);
-  --color-midnight-50: rgba(11, 11, 21, 0.5);
-
-  --font-sans: Inter, sans-serif;
+  --color-emerald-5: rgba(16, 185, 129, 0.05);
+  --color-emerald-10: rgba(16, 185, 129, 0.1);
+  --color-emerald-20: rgba(16, 185, 129, 0.2);
+  --color-emerald-600: #059669;
+  
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
 
   --color-midnight: var(--theme-midnight);
   --color-surface: var(--theme-surface);
   --color-surface-highlight: var(--theme-highlight);
-  --color-neon-purple: #8B5CF6;
+  --color-neon-purple: #10B981; /* Shifted to Emerald for consistency with photos */
+  --color-emerald: #10B981;
   --color-electric-blue: #3B82F6;
   --color-accent-pink: #EC4899;
   --color-text-primary: var(--theme-text-primary);
@@ -30,19 +30,19 @@
 
 @layer base {
   :root {
-    --theme-midnight: #0B0B15;
-    --theme-surface: #121223;
-    --theme-highlight: #1E1E3F;
-    --theme-text-primary: #E2E8F0;
+    --theme-midnight: #0B0B0B;
+    --theme-surface: #141414;
+    --theme-highlight: #1F1F1F;
+    --theme-text-primary: #FFFFFF;
     --theme-text-secondary: #94A3B8;
   }
 
   .light {
-    --theme-midnight: #F8FAFC;
+    --theme-midnight: #F9FAFB;
     --theme-surface: #FFFFFF;
     --theme-highlight: #F1F5F9;
-    --theme-text-primary: #1E293B;
-    --theme-text-secondary: #64748B;
+    --theme-text-primary: #111827;
+    --theme-text-secondary: #6B7280;
     --color-white-5: rgba(0, 0, 0, 0.05);
     --color-white-10: rgba(0, 0, 0, 0.1);
     --color-white-20: rgba(0, 0, 0, 0.2);

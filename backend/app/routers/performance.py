@@ -8,6 +8,7 @@ import shutil
 from ..database import get_db
 from ..models import Fund, FundNAVHistory, FundPerformanceMetrics
 from ..services.fmr_parser import parse_fmr_pdf_with_ai
+from ..config import FMR_DIR
 
 router = APIRouter(
     prefix="/api/performance",
@@ -22,8 +23,9 @@ async def upload_fmr(file: UploadFile = File(...), db: Session = Depends(get_db)
     """
     if not file.filename.lower().endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Only PDF files are supported.")
-        
-    upload_dir = "C:/Users/Jameel Akhtar/data/FMRs"
+
+    # FMR_DIR resolves to "Fund Tracker PDF Data/FMRs/" inside the project folder.
+    upload_dir = str(FMR_DIR)
     os.makedirs(upload_dir, exist_ok=True)
     
     file_path = os.path.join(upload_dir, file.filename)

@@ -7,7 +7,7 @@ from playwright.sync_api import sync_playwright
 # Add parent directory to path to allow importing app modules
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from app.database import SessionLocal, engine
-from app.models import Base, Fund, FundNAVHistory, FundPerformanceMetrics
+from app.models import Base, Fund, FundNAVHistory, FundPerformanceMetrics, ScraperStatus
 from sqlalchemy.orm import Session
 
 logging.basicConfig(level=logging.INFO)
@@ -24,52 +24,107 @@ def scrape_mufap_data():
     """
     logger.info("Starting background scrape of MUFAP Daily NAVs...")
     init_db()
-    
+    db = SessionLocal()
+
+    def _set_status(healthy: bool, error_msg: str = None):
+        try:
+            status = db.query(ScraperStatus).filter(ScraperStatus.scraper_name == "mufap_daily").first()
+            if not status:
+                status = ScraperStatus(scraper_name="mufap_daily")
+                db.add(status)
+            status.is_healthy = healthy
+            status.error_message = error_msg
+            status.requires_maintenance = not healthy
+            status.last_run_at = datetime.utcnow()
+            db.commit()
+        except:
+            pass
+
     try:
         # 1. Fetch the data using Playwright to bypass Cloudflare and wait for JS DataTables
-        with sync_playwright() as p:
-            browser = p.chromium.launch(headless=True)
-            page = browser.new_page()
-            
-            target_url = "https://mufap.com.pk/Industry/IndustryStatDaily?tab=1"
-            logger.info(f"Navigating to {target_url}")
-            page.goto(target_url, wait_until='networkidle', timeout=60000)
-            
-            # Wait for the DataTables to load its content
-            page.wait_for_timeout(5000) 
-            
-            # Extract the raw text of the entire table from the DOM.
-            # This returns a clean tab-separated string representation.
+        table_text = ""
+        vps_text = ""
+        
+        for attempt in range(3):
+            logger.info(f"Scrape attempt {attempt + 1}")
             try:
-                table_text = page.locator('#table_id').inner_text()
+                with sync_playwright() as p:
+                    browser = p.chromium.launch(
+                        headless=True,
+                        args=[
+                            "--disable-blink-features=AutomationControlled",
+                            "--no-sandbox",
+                            "--disable-setuid-sandbox"
+                        ]
+                    )
+                    try:
+                        context = browser.new_context(user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+                        context.add_init_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
+                        page = context.new_page()
+                        
+                        target_url = "https://mufap.com.pk/Industry/IndustryStatDaily?tab=1"
+                        logger.info(f"Navigating to {target_url}")
+                        try:
+                            page.goto(target_url, wait_until='domcontentloaded', timeout=60000)
+                        except Exception as e:
+                            logger.warning(f"Navigation timeout/error: {e}")
+                        
+                        for _ in range(15):
+                            page.wait_for_timeout(2000)
+                            try:
+                                if len(page.locator('#table_id').inner_text()) > 500:
+                                    break
+                            except Exception:
+                                pass
+                        
+                        try:
+                            table_text = page.locator('#table_id').inner_text()
+                        except Exception as e:
+                            logger.error(f"Could not locate #table_id: {e}")
+                            table_text = ""
+    
+                        if table_text and len(table_text) > 500:
+                            try:
+                                try:
+                                    page.goto("https://mufap.com.pk/WebPost/WebPostById?title=VoluntryPansionFund(VPS)", wait_until='domcontentloaded', timeout=60000)
+                                except Exception as e:
+                                    logger.warning(f"VPS navigation timeout/error: {e}")
+                                page.wait_for_timeout(3000)
+                                vps_tables = page.locator('table')
+                                for i in range(vps_tables.count()):
+                                    tmp_text = vps_tables.nth(i).inner_text()
+                                    if "Offer Price" in tmp_text and "NAV" in tmp_text and "Category" in tmp_text:
+                                        vps_text = tmp_text
+                                        break
+                                logger.info("Successfully extracted VPS text.")
+                            except Exception as e:
+                                logger.error(f"Failed to extract VPS table: {e}")
+                            break # Break out of retry loop if successful
+                        else:
+                            # Save diagnostic screenshot and HTML on failure
+                            logger.warning("Scraped table text is empty or invalid. Saving diagnostic dump.")
+                            from ..config import SCRAPER_LOGS_DIR
+                            dump_dir = str(SCRAPER_LOGS_DIR)
+                            os.makedirs(dump_dir, exist_ok=True)
+                            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                            try:
+                                page.screenshot(path=os.path.join(dump_dir, f"mufap_fail_{timestamp}.png"))
+                                with open(os.path.join(dump_dir, f"mufap_fail_{timestamp}.html"), "w", encoding="utf-8") as f:
+                                    f.write(page.content())
+                            except Exception as dump_err:
+                                logger.error(f"Failed to save diagnostic dump: {dump_err}")
+                    finally:
+                        browser.close()
             except Exception as e:
-                logger.error(f"Could not locate #table_id: {e}")
-                browser.close()
-                return
-
-            # ALSO SCRAPE VPS PAGE
-            vps_text = ""
-            try:
-                page.goto("https://mufap.com.pk/WebPost/WebPostById?title=VoluntryPansionFund(VPS)", wait_until='networkidle', timeout=60000)
-                page.wait_for_timeout(3000)
-                vps_tables = page.locator('table')
-                # Find the table containing the actual card layout by checking for "Offer Price"
-                for i in range(vps_tables.count()):
-                    tmp_text = vps_tables.nth(i).inner_text()
-                    if "Offer Price" in tmp_text and "NAV" in tmp_text and "Category" in tmp_text:
-                        vps_text = tmp_text
-                        break
-                logger.info("Successfully extracted VPS text.")
-            except Exception as e:
-                logger.error(f"Failed to extract VPS table: {e}")
+                logger.error(f"Attempt {attempt + 1} failed: {e}")
+                import time
+                time.sleep(5)
                 
-            browser.close()
-            
-        if not table_text:
-            logger.error("Scraped table text is empty.")
+        if not table_text or len(table_text) < 500:
+            err = "Scraped table text is empty or invalid after retries."
+            logger.error(err)
+            _set_status(False, err)
             return
-
-        db = SessionLocal()
         
         try:
             tracked_funds = {f.name.lower(): f.id for f in db.query(Fund).all()}
@@ -118,33 +173,31 @@ def scrape_mufap_data():
                     "ytd": cols[headers.index('YTD')].strip() if 'YTD' in headers else None,
                 })
 
-            # Process VPS Text
+            # Process VPS Text using robust card separation
             if vps_text:
-                vps_lines = [l.strip() for l in vps_text.split('\n') if l.strip()]
-                idx = 0
-                while idx < len(vps_lines):
-                    if 'Pension' in vps_lines[idx] or 'Retirement' in vps_lines[idx] or 'Fund' in vps_lines[idx]:
-                        fund_name = vps_lines[idx]
-                        if idx + 7 < len(vps_lines):
-                            # card is compact now due to strip()
-                            nav = '0'
-                            cat = 'Unknown'
-                            for j in range(idx, min(idx+15, len(vps_lines))):
-                                if vps_lines[j] == 'NAV':
-                                    nav = vps_lines[j-1]
-                                elif vps_lines[j] == 'Category':
-                                    cat = vps_lines[j-1]
+                cards = vps_text.split('VIEW DETAILS')
+                for card in cards:
+                    lines = [l.strip() for l in card.split('\n') if l.strip()]
+                    if not lines: continue
+                    
+                    fund_name = lines[0]
+                    nav = '0'
+                    cat = 'Unknown'
+                    
+                    for i, line in enumerate(lines):
+                        if line == 'NAV' and i > 0:
+                            nav = lines[i-1]
+                        elif line == 'Category' and i > 0:
+                            cat = lines[i-1]
                             
-                            if nav != '0' and cat != 'Unknown':
-                                extracted_records.append({
-                                    "name": f"{fund_name.lower()} {cat.lower()}", # Combine name and category to match specific sub-funds
-                                    "nav": nav,
-                                    "cat": cat,
-                                    "1_day": None, "mtd": None, "180_days": None, "365_days": None, "ytd": None
-                                })
-                            idx += 8
-                            continue
-                    idx += 1
+                    if nav != '0' and cat != 'Unknown':
+                        extracted_records.append({
+                            "name": f"{fund_name.lower()} {cat.lower()}",
+                            "nav": nav,
+                            "cat": cat,
+                            "1_day": None, "mtd": None, "180_days": None, "365_days": None, "ytd": None
+                        })
+
 
             # Now map against tracking funds
             for row in extracted_records:
@@ -161,18 +214,27 @@ def scrape_mufap_data():
                         mapped_fund_id = db_fund_id
                         break
                     
-                    # Pension Sub-Fund Match (e.g. "MTPF - Equity" matches "Meezan Tahaffuz Pension Fund ... Equity")
+                    # Pension Sub-Fund Match
                     if ('mtpf' in db_fund_name or 'pension' in db_fund_name) and 'pension' in row["name"]:
-                        # check if bank matches
-                        if ('meezan' in row["name"] and 'mtpf' in db_fund_name) or ('meezan' in db_fund_name and 'meezan' in row["name"]) or ('hbl' in db_fund_name and 'hbl' in row["name"]) or ('atlas' in db_fund_name and 'atlas' in row["name"]) or ('faysal' in db_fund_name.replace('faysal','faysal') and 'faysal' in row["name"]):
-                            # check if category matches
-                            if ('equity' in row_search_text and 'equity' in db_search_text) or ('debt' in row_search_text and 'debt' in db_search_text) or ('money market' in row_search_text and 'money market' in db_search_text):
-                                mapped_fund_id = db_fund_id
-                                break
+                        # Strict Islamic/Conventional check
+                        is_db_islamic = any(k in db_fund_name for k in ['islamic', 'shariah', 'mtpf', 'meezan', 'alhamra', 'al ameen'])
+                        is_row_islamic = any(k in row["name"] for k in ['islamic', 'shariah', 'mtpf', 'meezan', 'alhamra', 'al ameen'])
+                        
+                        if is_db_islamic == is_row_islamic:
+                            # check if bank matches
+                            if ('meezan' in row["name"] and 'mtpf' in db_fund_name) or ('meezan' in db_fund_name and 'meezan' in row["name"]) or ('hbl' in db_fund_name and 'hbl' in row["name"]) or ('atlas' in db_fund_name and 'atlas' in row["name"]) or ('faysal' in db_fund_name.replace('faysal','faysal') and 'faysal' in row["name"]):
+                                # check if category matches
+                                if ('equity' in row_search_text and 'equity' in db_search_text) or ('debt' in row_search_text and 'debt' in db_search_text) or ('money market' in row_search_text and 'money market' in db_search_text):
+                                    mapped_fund_id = db_fund_id
+                                    break
+                    
+                    import re
+                    def normalize_name(s):
+                        return re.sub(r'[^a-z0-9]', '', s.lower().replace('sub fund', '').replace('sub-fund', '').replace('fund', '').replace('index', '').replace('tracker', '').replace('plan', ''))
                     
                     # For normal funds fallback
-                    if db_fund_name in row["name"] or row["name"] in db_fund_name:
-                        # only if it's very close
+                    if normalize_name(db_fund_name) == normalize_name(row["name"]) or db_fund_name in row["name"] or row["name"] in db_fund_name:
+                        # only if it's very close or normalized match
                         if len(db_fund_name) > 5 and len(row["name"]) > 5:
                             mapped_fund_id = db_fund_id
                             break
@@ -233,14 +295,32 @@ def scrape_mufap_data():
             if processed_count > 0:
                 db.commit()
                 logger.info(f"Successfully scraped and updated {processed_count} funds.")
+                
+                # Update is_active for stale/matured funds
+                try:
+                    from datetime import timedelta
+                    stale_cutoff = (datetime.now() - timedelta(days=5)).strftime("%Y-%m-%d")
+                    all_funds_db = db.query(Fund).filter(Fund.is_active == True).all()
+                    for fb in all_funds_db:
+                        latest_nav = db.query(FundNAVHistory).filter(FundNAVHistory.fund_id == fb.id).order_by(FundNAVHistory.date.desc()).first()
+                        if latest_nav and latest_nav.date < stale_cutoff:
+                            logger.info(f"Marking fund {fb.name} as inactive (last seen {latest_nav.date})")
+                            fb.is_active = False
+                    db.commit()
+                except Exception as e:
+                    logger.error(f"Error marking inactive funds: {e}")
+                _set_status(True, None)
             else:
                 logger.warning("No new matching funds were processed today.")
+                _set_status(True, "No matching funds processed.")
                 
         finally:
              db.close()
              
     except Exception as e:
         logger.error(f"Failed to scrape MUFAP: {e}")
+        _set_status(False, str(e))
+        db.close()
         
 if __name__ == "__main__":
     scrape_mufap_data()

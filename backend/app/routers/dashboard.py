@@ -12,11 +12,13 @@ router = APIRouter(
     tags=["dashboard"]
 )
 
-def get_latest_statements(db: Session, user_id: int, bank_name: Optional[str] = None, days: Optional[int] = None):
+def get_latest_statements(db: Session, user_id: int, bank_name: Optional[str] = None, days: Optional[int] = None, portfolio_account: Optional[str] = None):
     """Helper to get the most recent statement for each portfolio owned by the user, optionally filtered by bank and date range."""
     query = db.query(models.Portfolio).filter(models.Portfolio.user_id == user_id)
     if bank_name:
         query = query.join(models.Bank).filter(func.lower(models.Bank.name) == bank_name.lower())
+    if portfolio_account:
+        query = query.filter(models.Portfolio.account_number == portfolio_account)
         
     portfolios = query.all()
     portfolio_ids = [p.id for p in portfolios]
@@ -59,13 +61,14 @@ def get_latest_statements(db: Session, user_id: int, bank_name: Optional[str] = 
 @router.get("/summary", response_model=Dict[str, Any])
 def get_dashboard_summary(
     bank: Optional[str] = Query(None, description="Filter by bank name"),
+    portfolio_account: Optional[str] = Query(None, description="Filter by portfolio account"),
     current_user: schemas.User = Depends(utils.get_current_user),
     db: Session = Depends(database.get_db)
 ):
     """
     Returns high-level summary: Net Worth, Total Invested, Gain/Loss.
     """
-    latest_statements, portfolios = get_latest_statements(db, current_user.id, bank)
+    latest_statements, portfolios = get_latest_statements(db, current_user.id, bank, portfolio_account=portfolio_account)
     
     total_net_worth = 0.0
     total_gain_loss = 0.0
@@ -140,19 +143,22 @@ def get_dashboard_summary(
         "monthly_change_pct": monthly_change_pct,
         "top_performing_bank": top_performer_title,
         "top_performing_subtitle": top_performer_subtitle,
-        "has_one_month": has_one_month
+        "has_one_month": has_one_month,
+        "bank_breakdown": dict(bank_totals),
+        "available_portfolios": list(set([p.account_number for p in portfolios if p.account_number]))
     }
 
 @router.get("/holdings", response_model=List[Dict[str, Any]])
 def get_detailed_holdings(
     bank: Optional[str] = Query(None, description="Filter by bank name"),
+    portfolio_account: Optional[str] = Query(None, description="Filter by portfolio account"),
     current_user: schemas.User = Depends(utils.get_current_user),
     db: Session = Depends(database.get_db)
 ):
     """
     Returns a flat list of all individual fund investments from the latest statements.
     """
-    latest_statements, portfolios = get_latest_statements(db, current_user.id, bank)
+    latest_statements, portfolios = get_latest_statements(db, current_user.id, bank, portfolio_account=portfolio_account)
     portfolio_banks = {p.id: (p.bank.name if p.bank else "Unknown") for p in portfolios}
     portfolio_accounts = {p.id: p.account_number for p in portfolios}
     
@@ -196,13 +202,14 @@ def get_detailed_holdings(
 def get_asset_allocation(
     bank: Optional[str] = Query(None, description="Filter by bank name"),
     days: Optional[int] = Query(None, description="Filter by trailing days (e.g., 30, 90, 180, 365)"),
+    portfolio_account: Optional[str] = Query(None, description="Filter by portfolio account"),
     current_user: schemas.User = Depends(utils.get_current_user),
     db: Session = Depends(database.get_db)
 ):
     """
     Returns asset allocation (categories) for the latest statements.
     """
-    latest_statements, _ = get_latest_statements(db, current_user.id, bank, days)
+    latest_statements, _ = get_latest_statements(db, current_user.id, bank, days, portfolio_account=portfolio_account)
     
     allocations = defaultdict(float)
     
@@ -251,6 +258,7 @@ def get_asset_allocation(
 def get_portfolio_performance(
     bank: Optional[str] = Query(None, description="Filter by bank name"),
     days: Optional[int] = Query(None, description="Filter by trailing days (e.g., 30, 90, 180, 365)"),
+    portfolio_account: Optional[str] = Query(None, description="Filter by portfolio account"),
     current_user: schemas.User = Depends(utils.get_current_user),
     db: Session = Depends(database.get_db)
 ):
@@ -273,6 +281,9 @@ def get_portfolio_performance(
         # we can do string comparison or parse. The easiest in SQLite/Postgres is string comparison for ISO dates.
         cutoff_str = cutoff.strftime("%Y-%m-%d")
         query = query.filter(models.Statement.date >= cutoff_str)
+
+    if portfolio_account:
+        query = query.filter(models.Portfolio.account_number == portfolio_account)
 
     statements = query.order_by(models.Statement.date.asc()).all()
     
@@ -413,4 +424,250 @@ def get_ai_insights(
         "insight_available": len(summary_insights) > 0,
         "insight": summary_insights[0] if summary_insights else None,
         "all_insights": summary_insights
+    }
+
+@router.get("/health-check", response_model=Dict[str, Any])
+def get_health_check(
+    bank: Optional[str] = Query(None, description="Filter by bank name"),
+    current_user: schemas.User = Depends(utils.get_current_user),
+    db: Session = Depends(database.get_db)
+):
+    """
+    Analyzes current portfolio for diversification risk factors and generates severity-tiered alerts.
+    """
+    latest_statements, portfolios = get_latest_statements(db, current_user.id, bank)
+    portfolio_banks = {p.id: (p.bank.name if p.bank else "Unknown") for p in portfolios}
+    
+    total_market_value = 0.0
+    category_totals = defaultdict(float)
+    bank_totals = defaultdict(float)
+    
+    for stmt in latest_statements:
+        raw = stmt.raw_data if isinstance(stmt.raw_data, dict) else json.loads(stmt.raw_data)
+        b_name = portfolio_banks.get(stmt.portfolio_id, "Unknown")
+        holdings = raw.get("holdings", [])
+        
+        for h in holdings:
+            val = h.get("market_value", 0.0)
+            cat = h.get("category", "Other")
+            
+            total_market_value += val
+            category_totals[cat] += val
+            bank_totals[b_name] += val
+
+    alerts = []
+    
+    if total_market_value > 0:
+        # Check Categories
+        safe_keywords = ["money market", "income", "debt", "islamic funds", "cash"]
+        gold_keywords = ["gold", "commodity"]
+        
+        for cat, amount in category_totals.items():
+            pct = amount / total_market_value
+            is_safe = any(k in cat.lower() for k in safe_keywords)
+            is_gold = any(k in cat.lower() for k in gold_keywords)
+            
+            if is_gold and pct > 0.40:
+                alerts.append({
+                    "id": f"gold_concentration_{cat}",
+                    "title": "Gold Concentration Risk",
+                    "message": f"{pct * 100:.1f}% of your portfolio is in Gold/Commodities. While a strong hedge, high concentration in non-income assets increases volatility. Consider capping exposure.",
+                    "severity": "warning",
+                    "data": { "percentage": pct * 100, "amount": amount }
+                })
+            elif is_safe and pct > 0.70:
+                alerts.append({
+                    "id": f"safe_haven_{cat}",
+                    "title": f"Safe Haven Dominance: {cat}",
+                    "message": f"Your portfolio is heavily allocated to low-risk {cat} ({pct * 100:.1f}%). This provides excellent capital preservation.",
+                    "severity": "info",
+                    "data": { "percentage": pct * 100, "amount": amount }
+                })
+            elif not is_safe and not is_gold and pct > 0.60:
+                alerts.append({
+                    "id": f"danger_concentration_{cat}",
+                    "title": f"High Warning: {cat} Concentration",
+                    "message": f"Your portfolio is highly exposed to {cat} assets ({pct * 100:.1f}%). Consider diversifying into safer categories to hedge against market volatility.",
+                    "severity": "danger",
+                    "data": { "percentage": pct * 100, "amount": amount }
+                })
+
+        # Check Banks
+        for b, amount in bank_totals.items():
+            pct = amount / total_market_value
+            if pct > 0.80:
+                alerts.append({
+                    "id": f"bank_concentration_{b}",
+                    "title": f"Bank Concentration Risk: {b}",
+                    "message": f"{pct * 100:.1f}% of your wealth is held strictly in {b}. For stronger risk management, redistributing to other institutions is recommended.",
+                    "severity": "warning",
+                    "data": { "percentage": pct * 100, "amount": amount }
+                })
+                
+    overall_health = "success"
+    if any(a["severity"] == "danger" for a in alerts):
+        overall_health = "danger"
+    elif any(a["severity"] == "warning" for a in alerts):
+        overall_health = "warning"
+    elif any(a["severity"] == "info" for a in alerts):
+        overall_health = "info"
+
+    return {
+        "alerts": alerts,
+        "overall_health": overall_health
+    }
+
+@router.get("/fund-outperformers", response_model=Dict[str, Any])
+def get_fund_outperformers(
+    current_user: schemas.User = Depends(utils.get_current_user),
+    db: Session = Depends(database.get_db)
+):
+    """
+    Analyzes user's funds against peer funds of the exact same type and returns any 
+    peer funds that are outperforming the user's funds by a significant margin.
+    """
+    from sqlalchemy import desc
+
+    latest_statements, _ = get_latest_statements(db, current_user.id)
+    
+    # 1. Gather all unique user holdings
+    user_holdings = {}
+    for stmt in latest_statements:
+        raw = stmt.raw_data if isinstance(stmt.raw_data, dict) else json.loads(stmt.raw_data)
+        for h in raw.get("holdings", []):
+            fname = h.get("fund_name", "")
+            if fname and fname not in user_holdings:
+                user_holdings[fname] = h
+
+    # 2. Match with our DB funds to get fund_type
+    all_funds = db.query(models.Fund).all()
+    fund_map = {f.name.lower(): f for f in all_funds}
+    
+    matched_user_funds = {} # user_fund_obj -> raw_holding
+    for raw_name, holding in user_holdings.items():
+        # Simple fuzzy match
+        for f_name, f_obj in fund_map.items():
+            if raw_name.lower() in f_name or f_name in raw_name.lower():
+                matched_user_funds[f_obj] = holding
+                break
+
+
+    
+    def get_fund_metrics(f: models.Fund) -> dict:
+        if getattr(f, 'is_active', True) == False:
+            return {
+                "1m": 0.0,
+                "6m": 0.0,
+                "1y": 0.0,
+                "source": "matured",
+                "is_active": False
+            }
+            
+        latest = db.query(models.FundPerformanceMetrics).filter(
+            models.FundPerformanceMetrics.fund_id == f.id
+        ).order_by(desc(models.FundPerformanceMetrics.date)).first()
+        
+        m_1m = latest.return_1m if (latest and latest.return_1m != 0.0) else (f.fmr_return_1m or None)
+        m_6m = latest.return_6m if (latest and latest.return_6m != 0.0) else (f.fmr_return_6m or None)
+        m_1y = latest.return_1y if (latest and latest.return_1y != 0.0) else (f.fmr_return_1y or None)
+        
+        source = "unknown"
+        if latest and latest.return_1m and f.fmr_return_1m:
+            source = "mufap+fmr"
+        elif latest and latest.return_1m:
+            source = "mufap_only"
+        elif f.fmr_return_1m:
+            source = "fmr_only"
+
+        return {
+            "1m": m_1m,
+            "6m": m_6m,
+            "1y": m_1y,
+            "source": source,
+            "is_active": True
+        }
+
+    def calc_composite(metrics: dict) -> Optional[float]:
+        available = []
+        if metrics["1m"] is not None: available.append(metrics["1m"])
+        if metrics["6m"] is not None: available.append(metrics["6m"])
+        if metrics["1y"] is not None: available.append(metrics["1y"])
+        
+        if len(available) < 2:
+            return None
+            
+        score = sum(available)
+        return score / len(available)
+        
+    def get_threshold(ftype: str) -> float:
+        ft = (ftype or "").lower()
+        if "money market" in ft: return 1.0
+        if "income" in ft or "debt" in ft: return 2.0
+        return 3.0 # equity, commodity, others
+
+    results = []
+    
+    # 3. For each user fund, find same-type peers
+    for u_fund, holding in matched_user_funds.items():
+        if not u_fund.fund_type or u_fund.fund_type.lower() == "unknown":
+            continue
+            
+        u_metrics = get_fund_metrics(u_fund)
+        u_composite = calc_composite(u_metrics)
+        
+        if u_composite is None:
+            continue
+            
+        threshold = get_threshold(u_fund.fund_type)
+        
+        peers = [f for f in all_funds if f.id != u_fund.id and f.fund_type == u_fund.fund_type]
+        
+        outperformers = []
+        for p in peers:
+            if getattr(p, 'is_active', True) == False: continue
+            
+            p_metrics = get_fund_metrics(p)
+            p_composite = calc_composite(p_metrics)
+            
+            if p_composite is not None and (p_composite - u_composite) >= threshold:
+                outperformers.append({
+                    "fund_obj": p,
+                    "metrics": p_metrics,
+                    "composite": p_composite,
+                    "gap": p_composite - u_composite
+                })
+                
+        # Sort and take up to 3
+        outperformers.sort(key=lambda x: x["gap"], reverse=True)
+        top_performers = outperformers[:3]
+        
+        formatted_outperformers = []
+        for idx, op in enumerate(top_performers):
+            formatted_outperformers.append({
+                "rank": idx + 1,
+                "fund_name": op["fund_obj"].name,
+                "bank": op["fund_obj"].bank.name if op["fund_obj"].bank else "Unknown",
+                "fund_type": op["fund_obj"].fund_type,
+                "composite_score": round(op["composite"], 2),
+                "gap": round(op["gap"], 2),
+                "data_source": op["metrics"]["source"],
+                "breakdown": {
+                    "1m": { "user": u_metrics["1m"], "peer": op["metrics"]["1m"] },
+                    "6m": { "user": u_metrics["6m"], "peer": op["metrics"]["6m"] },
+                    "1y": { "user": u_metrics["1y"], "peer": op["metrics"]["1y"] }
+                }
+            })
+            
+        results.append({
+            "user_fund": u_fund.name,
+            "user_fund_short": u_fund.short_name,
+            "user_fund_type": u_fund.fund_type,
+            "user_composite_score": round(u_composite, 2),
+            "user_data_source": u_metrics["source"],
+            "no_significant_underperformance": len(formatted_outperformers) == 0,
+            "top_outperformers": formatted_outperformers
+        })
+
+    return {
+        "results": results
     }
