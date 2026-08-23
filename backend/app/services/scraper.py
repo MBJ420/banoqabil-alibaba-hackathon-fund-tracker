@@ -1,5 +1,6 @@
 import os
 import sys
+import asyncio
 import logging
 from datetime import datetime
 from playwright.sync_api import sync_playwright
@@ -22,6 +23,9 @@ def scrape_mufap_data():
     """
     Scrapes the daily NAV and performance metrics from MUFAP and updates our DB.
     """
+    if sys.platform == 'win32':
+        asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
+
     logger.info("Starting background scrape of MUFAP Daily NAVs...")
     init_db()
     db = SessionLocal()
