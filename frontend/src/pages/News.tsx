@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 
 import client from '../api/client';
+import { useToast } from '../components/Toast';
 import {
   Newspaper, RefreshCw, ExternalLink, Clock, Tag,
   AlertCircle, Wifi, WifiOff, ChevronDown, X, Search, Pin
@@ -79,6 +80,7 @@ export default function News() {
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [scrapers, setScrapers]     = useState<ScraperStatusUI[]>([]);
   const [pinningId, setPinningId]   = useState<number | null>(null);
+  const { toast } = useToast();
 
   const fetchStatus = useCallback(async () => {
     try {
@@ -161,11 +163,10 @@ export default function News() {
     setPinningId(id);
     try {
       await client.post(`/news/context/pin/${id}`);
-      // Notify user visually that it worked (you can expand this with a toast system later)
-      alert("Article successfully pinned to your AI World Context!");
+      toast("Article successfully pinned to your AI World Context!", "success");
     } catch (e) {
       console.error("Failed to pin", e);
-      alert("Failed to pin article. See console.");
+      toast("Failed to pin article. See console.", "error");
     }
     setPinningId(null);
   };

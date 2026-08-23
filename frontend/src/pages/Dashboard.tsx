@@ -8,6 +8,8 @@ import { LogOut, LayoutDashboard, Database, TrendingUp, Zap, ArrowUpRight, Arrow
 import NewsPage from './News';
 import AINewsPage from './AINews';
 import PortfolioSuggestions from './PortfolioSuggestions';
+import StatementUploadModal from '../components/StatementUploadModal';
+import { useToast } from '../components/Toast';
 
 const formatCurrency = (amount: number | null | undefined): string => {
     if (amount === null || amount === undefined || isNaN(amount)) return '0.00';
@@ -21,6 +23,7 @@ const Dashboard = () => {
     const [holdings, setHoldings] = useState<any[]>([]);
     const [selectedStatement, setSelectedStatement] = useState<any>(null);
     const [isStatementModalOpen, setIsStatementModalOpen] = useState(false);
+    const [isStatementDetailsOpen, setIsStatementDetailsOpen] = useState(false);
     const [isPdfSettingsOpen, setIsPdfSettingsOpen] = useState(false);
     const [bankConfigs, setBankConfigs] = useState<Record<string, boolean>>({}); // bank_name -> has_password
     const [pdfPasswordInputs, setPdfPasswordInputs] = useState<Record<string, string>>({});
@@ -52,6 +55,7 @@ const Dashboard = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const currentPage = location.pathname; // "/", "/news", "/ai-news"
+    const { toast } = useToast();
 
     const [theme, setTheme] = useState<'dark' | 'light'>(() => {
         return (localStorage.getItem('theme') as 'dark' | 'light') || 'dark';
@@ -181,7 +185,7 @@ const Dashboard = () => {
             const res = await client.post('/api/performance/upload-fmr', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
-            alert(res.data.message || "FMR processed successfully.");
+            toast(res.data.message || "FMR processed successfully.", "success");
             // Refresh bank data if modal is open
             if (selectedBank) {
                 const req = await client.get(`/api/performance/bank/${selectedBank}`);
@@ -189,7 +193,7 @@ const Dashboard = () => {
             }
         } catch (err: any) {
             console.error(err);
-            alert("Failed to upload FMR: " + (err.response?.data?.detail || err.message));
+            toast("Failed to upload FMR: " + (err.response?.data?.detail || err.message), "error");
         } finally {
             setIsUploadingFMR(false);
             e.target.value = ''; // reset input
@@ -216,7 +220,7 @@ const Dashboard = () => {
             setPdfSaveStatus(s => ({ ...s, [bank]: 'saved' }));
             setTimeout(() => setPdfSaveStatus(s => ({ ...s, [bank]: '' })), 2500);
         } catch (err: any) {
-            alert('Failed to save password: ' + (err.response?.data?.detail || err.message));
+            toast('Failed to save password: ' + (err.response?.data?.detail || err.message), "error");
             setPdfSaveStatus(s => ({ ...s, [bank]: '' }));
         }
     };
@@ -272,14 +276,14 @@ const Dashboard = () => {
                 // @ts-ignore
                 const success = await window.api.exportPDF(fileName);
                 if (success) {
-                    alert(`Success! Portfolio Report saved successfully.`);
+                    toast("Success! Portfolio Report saved successfully.", "success");
                 }
             } else {
-                alert("Native PDF Export is not available in this environment.");
+                toast("Native PDF Export is not available in this environment.", "warning");
             }
         } catch (err: any) {
             console.error("PDF generation error:", err);
-            alert("Error generating PDF: " + (err.message || err.toString()));
+            toast("Error generating PDF: " + (err.message || err.toString()), "error");
         }
     };
 
@@ -455,6 +459,13 @@ const Dashboard = () => {
                             <span>{isUploadingFMR ? 'Uploading...' : 'Upload FMR'}</span>
                             <input type="file" accept=".pdf" className="hidden" onChange={handleFMRUpload} disabled={isUploadingFMR} />
                         </label>
+                        <button
+                            onClick={() => setIsStatementModalOpen(true)}
+                            className="px-4 py-2 bg-[var(--color-white-5)] hover:bg-[var(--color-white-10)] text-text-primary rounded-lg text-sm font-medium transition-all flex items-center gap-2 cursor-pointer"
+                        >
+                            <UploadCloud size={16} />
+                            <span>Upload Statement</span>
+                        </button>
                         {selectedBank && (
                             <HeaderButton
                                 onClick={() => setIsPerformanceModalOpen(true)}
@@ -469,6 +480,8 @@ const Dashboard = () => {
                         />
                     </div>
                 </header>
+
+                <StatementUploadModal isOpen={isStatementModalOpen} onClose={() => setIsStatementModalOpen(false)} />
 
                 {/* Content Area */}
                 <div className="flex-1 overflow-y-auto custom-scrollbar p-6 md:p-8 hide-in-pdf">
@@ -724,7 +737,7 @@ const Dashboard = () => {
                                                                         portfolio: pNo,
                                                                         holdings: stmtHoldings
                                                                     });
-                                                                    setIsStatementModalOpen(true);
+                                                                    setIsStatementDetailsOpen(true);
                                                                 }}
                                                                 className="px-6 py-4 bg-[var(--color-white-5)] border border-[var(--color-white-10)] rounded-2xl hover:bg-emerald-600/20 hover:border-emerald-500 transition-all group relative overflow-hidden flex flex-col items-start min-w-[200px]"
                                                             >
@@ -1153,11 +1166,11 @@ const Dashboard = () => {
                 )}
 
                 {/* Statement Details Modal Overlay */}
-                {isStatementModalOpen && selectedStatement && (
+                {isStatementDetailsOpen && selectedStatement && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-4">
                         <div className="bg-surface border border-emerald-500/20 rounded-3xl p-6 md:p-8 max-w-5xl w-full h-[85vh] shadow-2xl relative flex flex-col">
                             <button
-                                onClick={() => setIsStatementModalOpen(false)}
+                                onClick={() => setIsStatementDetailsOpen(false)}
                                 className="absolute top-4 right-4 p-2 text-text-secondary hover:text-white bg-[var(--color-white-5)] hover:bg-danger/20 rounded-full transition-colors z-10"
                             >
                                 <Zap size={16} className="rotate-45" />

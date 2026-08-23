@@ -7,7 +7,7 @@ if sys.platform == "win32":
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from .routers import auth, users, dashboard, performance, news
+from .routers import auth, users, dashboard, performance, news, statements
 from .database import engine, Base
 from apscheduler.schedulers.background import BackgroundScheduler
 from .services.watcher import Watcher
@@ -77,6 +77,7 @@ app.include_router(users.router)
 app.include_router(dashboard.router)
 app.include_router(performance.router)
 app.include_router(news.router)
+app.include_router(statements.router)
 
 @app.on_event("startup")
 async def startup_event():
