@@ -17,6 +17,7 @@ const Dashboard = () => {
     const [holdings, setHoldings] = useState<any[]>([]);
     const [selectedStatement, setSelectedStatement] = useState<any>(null);
     const [isStatementModalOpen, setIsStatementModalOpen] = useState(false);
+    const [isStatementDetailsOpen, setIsStatementDetailsOpen] = useState(false);
     const [isPdfSettingsOpen, setIsPdfSettingsOpen] = useState(false);
     const [bankConfigs, setBankConfigs] = useState<Record<string, boolean>>({}); // bank_name -> has_password
     const [pdfPasswordInputs, setPdfPasswordInputs] = useState<Record<string, string>>({});
@@ -715,7 +716,7 @@ const Dashboard = () => {
                                                                         portfolio: pNo,
                                                                         holdings: stmtHoldings
                                                                     });
-                                                                    setIsStatementModalOpen(true);
+                                                                    setIsStatementDetailsOpen(true);
                                                                 }}
                                                                 className="px-6 py-4 bg-[var(--color-white-5)] border border-[var(--color-white-10)] rounded-2xl hover:bg-emerald-600/20 hover:border-emerald-500 transition-all group relative overflow-hidden flex flex-col items-start min-w-[200px]"
                                                             >
@@ -1069,11 +1070,11 @@ const Dashboard = () => {
                 )}
 
                 {/* Statement Details Modal Overlay */}
-                {isStatementModalOpen && selectedStatement && (
+                {isStatementDetailsOpen && selectedStatement && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-4">
                         <div className="bg-surface border border-emerald-500/20 rounded-3xl p-6 md:p-8 max-w-5xl w-full h-[85vh] shadow-2xl relative flex flex-col">
                             <button
-                                onClick={() => setIsStatementModalOpen(false)}
+                                onClick={() => setIsStatementDetailsOpen(false)}
                                 className="absolute top-4 right-4 p-2 text-text-secondary hover:text-white bg-[var(--color-white-5)] hover:bg-danger/20 rounded-full transition-colors z-10"
                             >
                                 <Zap size={16} className="rotate-45" />
