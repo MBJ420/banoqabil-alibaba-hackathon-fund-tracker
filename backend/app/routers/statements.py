@@ -70,3 +70,30 @@ async def upload_statement(
         "total_market_value": summary.get("total_market_value", 0.0),
         "message": f"Processed {len(holdings)} holdings.",
     }
+
+
+@router.get("")
+async def list_statements(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(utils.get_current_user),
+    limit: int = 50,
+):
+    """Returns the logged-in user's saved statements (newest first) for the history view."""
+    statements = crud.get_user_statements(db, user_id=current_user.id, limit=limit)
+    result = []
+    for s in statements:
+        raw = s.raw_data if isinstance(s.raw_data, dict) else {}
+        summary = raw.get("summary", {}) if isinstance(raw.get("summary"), dict) else {}
+        bank_name = "Unknown"
+        if s.portfolio and s.portfolio.bank:
+            bank_name = s.portfolio.bank.name
+        result.append({
+            "id": s.id,
+            "date": s.date,
+            "bank": bank_name,
+            "portfolio_account": s.portfolio.account_number if s.portfolio else None,
+            "total_value": summary.get("total_market_value", 0.0),
+            "holdings_count": len(raw.get("holdings", []) or []),
+            "status": "VERIFIED",
+        })
+    return result

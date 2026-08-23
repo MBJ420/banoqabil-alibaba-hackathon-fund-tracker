@@ -169,3 +169,15 @@ def get_all_bank_configs(db: Session, user_id: int) -> list[models.UserBankConfi
         models.UserBankConfig.user_id == user_id
     ).all()
 
+
+def get_user_statements(db: Session, user_id: int, limit: int = 50) -> list[models.Statement]:
+    """Returns a user's saved statements ordered by date (newest first)."""
+    return (
+        db.query(models.Statement)
+        .join(models.Portfolio, models.Statement.portfolio_id == models.Portfolio.id)
+        .filter(models.Portfolio.user_id == user_id)
+        .order_by(models.Statement.date.desc(), models.Statement.created_at.desc())
+        .limit(limit)
+        .all()
+    )
+

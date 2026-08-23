@@ -15,6 +15,7 @@ const Dashboard = () => {
     const [allocation, setAllocation] = useState<any>(null);
     const [performance, setPerformance] = useState<any>(null);
     const [holdings, setHoldings] = useState<any[]>([]);
+    const [statementHistory, setStatementHistory] = useState<any[]>([]);
     const [selectedStatement, setSelectedStatement] = useState<any>(null);
     const [isStatementModalOpen, setIsStatementModalOpen] = useState(false);
     const [isPdfSettingsOpen, setIsPdfSettingsOpen] = useState(false);
@@ -144,6 +145,19 @@ const Dashboard = () => {
     // Fetch bank PDF password configs on mount
     useEffect(() => {
         fetchBankConfigs();
+    }, []);
+
+    // Fetch real statement history (replaces the previously mocked table)
+    useEffect(() => {
+        const fetchHistory = async () => {
+            try {
+                const res = await client.get('/api/statements');
+                setStatementHistory(Array.isArray(res.data) ? res.data : []);
+            } catch (err) {
+                console.error('Failed to load statement history:', err);
+            }
+        };
+        fetchHistory();
     }, []);
 
     const handleLogout = () => {
@@ -759,29 +773,33 @@ const Dashboard = () => {
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-[var(--color-white-5)]">
-                                            {[
-                                                { date: '2023-11-24', bank: 'Meezan Bank', action: 'FMR Uploaded', amount: '1,240,000.00', status: 'VERIFIED' },
-                                                { date: '2023-11-22', bank: 'HBL Asset Mgmt', action: 'Portfolio Rebalance', amount: '-450,000.00', status: 'PENDING' },
-                                                { date: '2023-11-15', bank: 'Atlas Funds', action: 'Dividend Reinvested', amount: '12,500.00', status: 'VERIFIED' },
-                                            ].map((row, i) => (
-                                                <tr key={i} className="hover:bg-[var(--color-white-2)] transition-colors group">
-                                                    <td className="px-6 py-4 text-xs font-mono text-text-secondary">{row.date}</td>
-                                                    <td className="px-6 py-4 text-sm font-semibold text-text-primary">{row.bank}</td>
-                                                    <td className="px-6 py-4 text-sm text-text-secondary">{row.action}</td>
-                                                    <td className="px-6 py-4 text-right font-mono text-sm font-bold text-text-primary">
-                                                        {row.amount}
-                                                    </td>
-                                                    <td className="px-6 py-4 text-center">
-                                                        <span className={`px-2.5 py-1 rounded-md text-[10px] font-bold tracking-tighter border ${
-                                                            row.status === 'VERIFIED' 
-                                                                ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' 
-                                                                : 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20'
-                                                        }`}>
-                                                            {row.status}
-                                                        </span>
+                                            {statementHistory.length === 0 ? (
+                                                <tr>
+                                                    <td colSpan={5} className="px-6 py-8 text-center text-text-secondary">
+                                                        No statement history yet. Upload an FMR or statement PDF to begin tracking.
                                                     </td>
                                                 </tr>
-                                            ))}
+                                            ) : (
+                                                statementHistory.map((row: any, i: number) => (
+                                                    <tr key={row.id ?? i} className="hover:bg-[var(--color-white-2)] transition-colors group">
+                                                        <td className="px-6 py-4 text-xs font-mono text-text-secondary">{row.date}</td>
+                                                        <td className="px-6 py-4 text-sm font-semibold text-text-primary">{row.bank}</td>
+                                                        <td className="px-6 py-4 text-sm text-text-secondary">Statement Uploaded</td>
+                                                        <td className="px-6 py-4 text-right font-mono text-sm font-bold text-text-primary">
+                                                            {(row.total_value || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                        </td>
+                                                        <td className="px-6 py-4 text-center">
+                                                            <span className={`px-2.5 py-1 rounded-md text-[10px] font-bold tracking-tighter border ${
+                                                                row.status === 'VERIFIED' 
+                                                                    ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' 
+                                                                    : 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20'
+                                                            }`}>
+                                                                {row.status}
+                                                            </span>
+                                                        </td>
+                                                    </tr>
+                                                ))
+                                            )}
                                         </tbody>
                                     </table>
                                 </div>
