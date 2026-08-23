@@ -21,7 +21,6 @@ const Dashboard = () => {
     const [allocation, setAllocation] = useState<any>(null);
     const [performance, setPerformance] = useState<any>(null);
     const [holdings, setHoldings] = useState<any[]>([]);
-    const [statementHistory, setStatementHistory] = useState<any[]>([]);
     const [selectedStatement, setSelectedStatement] = useState<any>(null);
     const [isStatementModalOpen, setIsStatementModalOpen] = useState(false);
     const [isStatementDetailsOpen, setIsStatementDetailsOpen] = useState(false);
@@ -157,19 +156,6 @@ const Dashboard = () => {
     // Fetch bank PDF password configs on mount
     useEffect(() => {
         fetchBankConfigs();
-    }, []);
-
-    // Fetch real statement history (replaces the previously mocked table)
-    useEffect(() => {
-        const fetchHistory = async () => {
-            try {
-                const res = await client.get('/api/statements');
-                setStatementHistory(Array.isArray(res.data) ? res.data : []);
-            } catch (err) {
-                console.error('Failed to load statement history:', err);
-            }
-        };
-        fetchHistory();
     }, []);
 
     const handleLogout = () => {
@@ -797,6 +783,7 @@ const Dashboard = () => {
                                                 <th className="px-6 py-4 text-center">Status</th>
                                             </tr>
                                         </thead>
+                                        <tbody className="divide-y divide-[var(--color-white-5)]">
                                             {(statements || []).length === 0 ? (
                                                 <tr>
                                                     <td colSpan={5} className="px-6 py-8 text-center text-text-secondary">
