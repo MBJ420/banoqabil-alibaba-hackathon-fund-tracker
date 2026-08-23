@@ -8,6 +8,7 @@ import { LogOut, LayoutDashboard, Database, TrendingUp, Zap, ArrowUpRight, Arrow
 import NewsPage from './News';
 import AINewsPage from './AINews';
 import PortfolioSuggestions from './PortfolioSuggestions';
+import StatementUploadModal from '../components/StatementUploadModal';
 
 const Dashboard = () => {
     const [summary, setSummary] = useState<any>(null);
@@ -264,8 +265,6 @@ const Dashboard = () => {
         }
     };
 
-    const COLORS = ['#8B5CF6', '#3B82F6', '#EC4899', '#10B981', '#F59E0B', '#64748B'];
-
     if (error) return (
         <div className="flex items-center justify-center h-screen bg-midnight text-danger">
             <div className="flex flex-col items-center gap-4 text-center">
@@ -438,6 +437,13 @@ const Dashboard = () => {
                             <span>{isUploadingFMR ? 'Uploading...' : 'Upload FMR'}</span>
                             <input type="file" accept=".pdf" className="hidden" onChange={handleFMRUpload} disabled={isUploadingFMR} />
                         </label>
+                        <button
+                            onClick={() => setIsStatementModalOpen(true)}
+                            className="px-4 py-2 bg-[var(--color-white-5)] hover:bg-[var(--color-white-10)] text-text-primary rounded-lg text-sm font-medium transition-all flex items-center gap-2 cursor-pointer"
+                        >
+                            <UploadCloud size={16} />
+                            <span>Upload Statement</span>
+                        </button>
                         {selectedBank && (
                             <HeaderButton
                                 onClick={() => setIsPerformanceModalOpen(true)}
@@ -452,6 +458,8 @@ const Dashboard = () => {
                         />
                     </div>
                 </header>
+
+                <StatementUploadModal isOpen={isStatementModalOpen} onClose={() => setIsStatementModalOpen(false)} />
 
                 {/* Content Area */}
                 <div className="flex-1 overflow-y-auto custom-scrollbar p-6 md:p-8 hide-in-pdf">
