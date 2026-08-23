@@ -9,6 +9,7 @@ import NewsPage from './News';
 import AINewsPage from './AINews';
 import PortfolioSuggestions from './PortfolioSuggestions';
 import StatementUploadModal from '../components/StatementUploadModal';
+import { useToast } from '../components/Toast';
 
 const Dashboard = () => {
     const [summary, setSummary] = useState<any>(null);
@@ -49,6 +50,7 @@ const Dashboard = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const currentPage = location.pathname; // "/", "/news", "/ai-news"
+    const { toast } = useToast();
 
     const [theme, setTheme] = useState<'dark' | 'light'>(() => {
         return (localStorage.getItem('theme') as 'dark' | 'light') || 'dark';
@@ -164,7 +166,7 @@ const Dashboard = () => {
             const res = await client.post('/api/performance/upload-fmr', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
-            alert(res.data.message || "FMR processed successfully.");
+            toast(res.data.message || "FMR processed successfully.", "success");
             // Refresh bank data if modal is open
             if (selectedBank) {
                 const req = await client.get(`/api/performance/bank/${selectedBank}`);
@@ -172,7 +174,7 @@ const Dashboard = () => {
             }
         } catch (err: any) {
             console.error(err);
-            alert("Failed to upload FMR: " + (err.response?.data?.detail || err.message));
+            toast("Failed to upload FMR: " + (err.response?.data?.detail || err.message), "error");
         } finally {
             setIsUploadingFMR(false);
             e.target.value = ''; // reset input
@@ -199,7 +201,7 @@ const Dashboard = () => {
             setPdfSaveStatus(s => ({ ...s, [bank]: 'saved' }));
             setTimeout(() => setPdfSaveStatus(s => ({ ...s, [bank]: '' })), 2500);
         } catch (err: any) {
-            alert('Failed to save password: ' + (err.response?.data?.detail || err.message));
+            toast('Failed to save password: ' + (err.response?.data?.detail || err.message), "error");
             setPdfSaveStatus(s => ({ ...s, [bank]: '' }));
         }
     };
@@ -255,14 +257,14 @@ const Dashboard = () => {
                 // @ts-ignore
                 const success = await window.api.exportPDF(fileName);
                 if (success) {
-                    alert(`Success! Portfolio Report saved successfully.`);
+                    toast("Success! Portfolio Report saved successfully.", "success");
                 }
             } else {
-                alert("Native PDF Export is not available in this environment.");
+                toast("Native PDF Export is not available in this environment.", "warning");
             }
         } catch (err: any) {
             console.error("PDF generation error:", err);
-            alert("Error generating PDF: " + (err.message || err.toString()));
+            toast("Error generating PDF: " + (err.message || err.toString()), "error");
         }
     };
 
