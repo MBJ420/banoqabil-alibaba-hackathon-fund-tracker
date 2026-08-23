@@ -671,3 +671,68 @@ def get_fund_outperformers(
     return {
         "results": results
     }
+
+@router.get("/statement-history", response_model=List[Dict[str, Any]])
+def get_statement_history(
+    bank: Optional[str] = Query(None, description="Filter by bank name"),
+    current_user: schemas.User = Depends(utils.get_current_user),
+    db: Session = Depends(database.get_db)
+):
+    """
+    Returns the history of all parsed statements for the user.
+    """
+    query = db.query(models.Statement, models.Portfolio, models.Bank).join(
+        models.Portfolio, models.Statement.portfolio_id == models.Portfolio.id
+    ).join(
+        models.Bank, models.Portfolio.bank_id == models.Bank.id
+    ).filter(
+        models.Portfolio.user_id == current_user.id
+    )
+    
+    if bank:
+        query = query.filter(func.lower(models.Bank.name) == bank.lower())
+        
+    results = query.order_by(models.Statement.created_at.desc()).all()
+    
+    history = []
+    for stmt, port, b in results:
+        raw = stmt.raw_data if isinstance(stmt.raw_data, dict) else json.loads(stmt.raw_data)
+        summary = raw.get("summary", {})
+        val = summary.get("total_market_value", 0.0)
+        
+        history.append({
+            "id": stmt.id,
+            "date": stmt.date,
+            "created_at": stmt.created_at.isoformat(),
+            "bank": b.name,
+            "account_number": port.account_number,
+            "amount": val,
+            "action": "Statement Parsed",
+            "status": "VERIFIED"
+        })
+        
+    return history
+
+@router.delete("/statements/{statement_id}")
+def delete_statement(
+    statement_id: int,
+    current_user: schemas.User = Depends(utils.get_current_user),
+    db: Session = Depends(database.get_db)
+):
+    """
+    Deletes a specific statement.
+    """
+    stmt = db.query(models.Statement).join(
+        models.Portfolio
+    ).filter(
+        models.Statement.id == statement_id,
+        models.Portfolio.user_id == current_user.id
+    ).first()
+    
+    if not stmt:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="Statement not found")
+        
+    db.delete(stmt)
+    db.commit()
+    return {"message": "Statement deleted successfully"}

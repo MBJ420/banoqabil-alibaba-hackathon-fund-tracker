@@ -53,6 +53,8 @@ const Dashboard = () => {
     });
 
     const [isCalculatorModalOpen, setIsCalculatorModalOpen] = useState(false);
+    const [statements, setStatements] = useState<any[]>([]);
+    const [isStatementHistoryModalOpen, setIsStatementHistoryModalOpen] = useState(false);
 
     useEffect(() => {
         const root = window.document.documentElement;
@@ -95,8 +97,9 @@ const Dashboard = () => {
                 const allocReq = client.get(`/dashboard/allocation${advancedQ}`);
                 const perfReq = client.get(`/dashboard/performance${advancedQ}`);
                 const holdingsReq = client.get(`/dashboard/holdings${q}`);
+                const statementsReq = client.get(`/dashboard/statement-history${q}`);
 
-                const requests = [summaryReq, allocReq, perfReq, holdingsReq];
+                const requests = [summaryReq, allocReq, perfReq, holdingsReq, statementsReq];
 
                 if (selectedBank) {
                     requests.push(client.get(`/api/performance/bank/${selectedBank}`).catch(() => ({ data: [] })) as any);
@@ -107,10 +110,11 @@ const Dashboard = () => {
                     timeoutPromise
                 ]) as any;
 
-                const [summaryRes, allocRes, perfRes, holdingsRes, bankPerfRes] = responses;
+                const [summaryRes, allocRes, perfRes, holdingsRes, statementsRes, bankPerfRes] = responses;
 
                 setSummary(summaryRes.data);
                 setHoldings(holdingsRes.data);
+                setStatements(statementsRes.data);
 
                 const pieData = allocRes.data.dates.map((name: string, index: number) => ({
                     name, value: allocRes.data.values[index]
@@ -148,6 +152,16 @@ const Dashboard = () => {
     const handleLogout = () => {
         localStorage.removeItem('token');
         navigate('/login');
+    };
+
+    const handleDeleteStatement = async (id: number) => {
+        if (!window.confirm('Are you sure you want to delete this statement?')) return;
+        try {
+            await client.delete(`/dashboard/statements/${id}`);
+            setStatements(statements.filter(s => s.id !== id));
+        } catch (err: any) {
+            alert("Failed to delete statement: " + (err.response?.data?.detail || err.message));
+        }
     };
 
     const handleFMRUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -735,7 +749,10 @@ const Dashboard = () => {
                                         <Activity size={20} className="text-emerald-500" />
                                         Recent Portfolio Updates
                                     </h3>
-                                    <button className="text-xs font-semibold text-emerald-500 hover:text-emerald-400 transition-colors uppercase tracking-widest">
+                                    <button 
+                                        onClick={() => setIsStatementHistoryModalOpen(true)}
+                                        className="text-xs font-semibold text-emerald-500 hover:text-emerald-400 transition-colors uppercase tracking-widest"
+                                    >
                                         View All History
                                     </button>
                                 </div>
@@ -751,29 +768,33 @@ const Dashboard = () => {
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-[var(--color-white-5)]">
-                                            {[
-                                                { date: '2023-11-24', bank: 'Meezan Bank', action: 'FMR Uploaded', amount: '1,240,000.00', status: 'VERIFIED' },
-                                                { date: '2023-11-22', bank: 'HBL Asset Mgmt', action: 'Portfolio Rebalance', amount: '-450,000.00', status: 'PENDING' },
-                                                { date: '2023-11-15', bank: 'Atlas Funds', action: 'Dividend Reinvested', amount: '12,500.00', status: 'VERIFIED' },
-                                            ].map((row, i) => (
-                                                <tr key={i} className="hover:bg-[var(--color-white-2)] transition-colors group">
-                                                    <td className="px-6 py-4 text-xs font-mono text-text-secondary">{row.date}</td>
-                                                    <td className="px-6 py-4 text-sm font-semibold text-text-primary">{row.bank}</td>
-                                                    <td className="px-6 py-4 text-sm text-text-secondary">{row.action}</td>
-                                                    <td className="px-6 py-4 text-right font-mono text-sm font-bold text-text-primary">
-                                                        {row.amount}
-                                                    </td>
-                                                    <td className="px-6 py-4 text-center">
-                                                        <span className={`px-2.5 py-1 rounded-md text-[10px] font-bold tracking-tighter border ${
-                                                            row.status === 'VERIFIED' 
-                                                                ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' 
-                                                                : 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20'
-                                                        }`}>
-                                                            {row.status}
-                                                        </span>
+                                            {statements.length === 0 ? (
+                                                <tr>
+                                                    <td colSpan={5} className="px-6 py-8 text-center text-text-secondary">
+                                                        No statements found.
                                                     </td>
                                                 </tr>
-                                            ))}
+                                            ) : (
+                                                statements.slice(0, 5).map((row, i) => (
+                                                    <tr key={i} className="hover:bg-[var(--color-white-2)] transition-colors group">
+                                                        <td className="px-6 py-4 text-xs font-mono text-text-secondary">{row.date}</td>
+                                                        <td className="px-6 py-4 text-sm font-semibold text-text-primary">{row.bank}</td>
+                                                        <td className="px-6 py-4 text-sm text-text-secondary">{row.action}</td>
+                                                        <td className="px-6 py-4 text-right font-mono text-sm font-bold text-text-primary">
+                                                            {formatCurrency(row.amount)}
+                                                        </td>
+                                                        <td className="px-6 py-4 text-center">
+                                                            <span className={`px-2.5 py-1 rounded-md text-[10px] font-bold tracking-tighter border ${
+                                                                row.status === 'VERIFIED' 
+                                                                    ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' 
+                                                                    : 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20'
+                                                            }`}>
+                                                                {row.status}
+                                                            </span>
+                                                        </td>
+                                                    </tr>
+                                                ))
+                                            )}
                                         </tbody>
                                     </table>
                                 </div>
@@ -800,6 +821,74 @@ const Dashboard = () => {
                         )}
                     </div>
                 </div>
+
+                {/* Statement History Modal */}
+                {isStatementHistoryModalOpen && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+                        <div className="bg-surface border border-[var(--color-white-10)] rounded-3xl p-8 max-w-4xl w-full shadow-2xl relative max-h-[85vh] flex flex-col">
+                            <button
+                                onClick={() => setIsStatementHistoryModalOpen(false)}
+                                className="absolute top-4 right-4 p-2 text-text-secondary hover:text-white bg-[var(--color-white-5)] hover:bg-[var(--color-white-10)] rounded-full transition-colors"
+                            >
+                                <Zap size={16} className="rotate-45" /> {/* Close Icon Approximation */}
+                            </button>
+
+                            <div className="flex items-center gap-3 mb-6 shrink-0">
+                                <div className="p-3 bg-emerald-500/20 text-emerald-500 rounded-2xl">
+                                    <Activity size={28} />
+                                </div>
+                                <div>
+                                    <h2 className="text-2xl font-bold text-text-primary">Statement History Ledger</h2>
+                                    <p className="text-sm text-text-secondary">View and manage all processed portfolio statements.</p>
+                                </div>
+                            </div>
+
+                            <div className="overflow-y-auto flex-1 pr-2 custom-scrollbar">
+                                <table className="w-full text-left">
+                                    <thead className="sticky top-0 bg-surface z-10">
+                                        <tr className="bg-[var(--color-white-5)] text-[10px] uppercase tracking-widest text-text-secondary font-bold">
+                                            <th className="px-6 py-4">Date</th>
+                                            <th className="px-6 py-4">Institution</th>
+                                            <th className="px-6 py-4">Account Number</th>
+                                            <th className="px-6 py-4">Action</th>
+                                            <th className="px-6 py-4 text-right">Valuation (PKR)</th>
+                                            <th className="px-6 py-4 text-center">Manage</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-[var(--color-white-5)]">
+                                        {statements.length === 0 ? (
+                                            <tr>
+                                                <td colSpan={6} className="px-6 py-8 text-center text-text-secondary">
+                                                    No statements found.
+                                                </td>
+                                            </tr>
+                                        ) : (
+                                            statements.map((row, i) => (
+                                                <tr key={i} className="hover:bg-[var(--color-white-2)] transition-colors group">
+                                                    <td className="px-6 py-4 text-xs font-mono text-text-secondary">{row.date}</td>
+                                                    <td className="px-6 py-4 text-sm font-semibold text-text-primary">{row.bank}</td>
+                                                    <td className="px-6 py-4 text-sm font-mono text-text-secondary">{row.account_number}</td>
+                                                    <td className="px-6 py-4 text-sm text-text-secondary">{row.action}</td>
+                                                    <td className="px-6 py-4 text-right font-mono text-sm font-bold text-text-primary">
+                                                        {formatCurrency(row.amount)}
+                                                    </td>
+                                                    <td className="px-6 py-4 text-center flex justify-center gap-2">
+                                                        <button 
+                                                            className="text-xs bg-red-500/10 text-red-500 hover:bg-red-500/20 px-3 py-1.5 rounded transition-colors"
+                                                            onClick={() => handleDeleteStatement(row.id)}
+                                                        >
+                                                            Delete
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* Calculator Modal Overlay */}
                 {isCalculatorModalOpen && (
