@@ -94,22 +94,43 @@ class PDFParser:
                 data["portfolio_id"] = valid_id if valid_id else f"PORT-{abs(hash(full_text)) % 100000}"
                     
             # --- ACCOUNT NAME ---
-            name_match = re.search(r"(?:Account Title|Name|Customer ID:.*?\n.*?\n)(.*?)\n", full_text, re.IGNORECASE)
-            if not name_match:
-                # Atlas/Faysal format has name right after IPA Number
-                name_match = re.search(r"IPA Number.*?\n(.*?)(?:\s+Employer Name|[\r\n])", full_text)
-            if not name_match:
-                # HBL often has name after "Distribution Payout: Re-Invest"
-                name_match = re.search(r"Distribution Payout:.*?\n(.*?)\n", full_text, re.IGNORECASE)
-            
-            if name_match:
-                name = name_match.group(1).strip().upper()
-                # Blacklist garbage headers and labels
-                blacklist = ["GROSS DIVIDEND", "WHT", "ZAKAT", "NET DIVIDEND", "PORTFOLIO NO", "FOLIO NO", "ACCOUNT NO", "TAX"]
+            # Gather several candidate lines, then pick the first that looks like a real person/holder name.
+            name_candidates = []
+            m = re.search(r"(?:Account Title|Name)\s*[:\n]\s*(.*?)(?:\n|Zakat|Status|$)", full_text, re.IGNORECASE)
+            if m:
+                name_candidates.append(m.group(1).strip())
+            m = re.search(r"Customer ID:.*?\n.*?\n(.*?)\n", full_text)
+            if m:
+                name_candidates.append(m.group(1).strip())
+            m = re.search(r"Zakat Status[^\n]*\n\s*(.*?)(?:\n|$)", full_text, re.IGNORECASE)
+            if m:
+                name_candidates.append(m.group(1).strip())
+            m = re.search(r"IPA Number.*?\n(.*?)(?:\s+Employer Name|[\r\n])", full_text)
+            if m:
+                name_candidates.append(m.group(1).strip())
+            m = re.search(r"Distribution Payout:.*?\n(.*?)\n", full_text, re.IGNORECASE)
+            if m:
+                name_candidates.append(m.group(1).strip())
+
+            # Labels that often sit on the same line as the holder name (e.g. "Zakat Status: Exempt")
+            blacklist = ["GROSS DIVIDEND", "WHT", "NET DIVIDEND", "PORTFOLIO NO", "FOLIO NO", "ACCOUNT NO", "TAX"]
+            suffix_markers = ["ZAKAT", "STATUS", "DIVIDEND OPTION", "EMPLOYER", "RISK PROFILE",
+                             "D.O.B", "DOB", "ACCOUNT OPENING", "MEMBER SERVICE", "VALUE ADDED",
+                             "IB OF", "ATM OF", "HARD COPY", "JOINT ACCOUNT", "NOMINEE",
+                             "RE-INVEST", "REINVEST"]
+            for cand in name_candidates:
+                if not cand:
+                    continue
+                name = cand.upper()
+                # Trim everything from the first trailing label so "NAME Zakat Status: Exempt" -> "NAME"
+                for marker in suffix_markers:
+                    idx = name.find(marker)
+                    if idx != -1:
+                        name = name[:idx].strip()
                 is_garbage = any(word in name for word in blacklist) or any(char.isdigit() for char in name)
-                
-                if name and not is_garbage and len(name) < 60 and (len(name.split()) > 1):
+                if name and not is_garbage and len(name) < 60 and len(name.split()) > 1:
                     data["account_name"] = name.replace("MR. ", "").replace("MS. ", "").strip()
+                    break
                 
             # --- HOLDINGS PARSING ---
             # --- HOLDINGS PARSING ---
