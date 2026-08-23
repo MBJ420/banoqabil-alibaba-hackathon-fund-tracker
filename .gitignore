@@ -1,5 +1,7 @@
 # ─── Database (never commit the real DB — everyone starts fresh) ──────────────
 *.db
+*.db-wal
+*.db-shm
 *.sqlite3
 fundtracker.db
 
