@@ -84,9 +84,9 @@ const Dashboard = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                // Add a timeout to prevent infinite loading
+                // Add a generous timeout so a slow (but alive) backend doesn't crash the dashboard
                 const timeoutPromise = new Promise((_, reject) =>
-                    setTimeout(() => reject(new Error("Request timed out")), 5000)
+                    setTimeout(() => reject(new Error("Request timed out. The server may be busy — try again.")), 30000)
                 );
 
                 const params = new URLSearchParams();
