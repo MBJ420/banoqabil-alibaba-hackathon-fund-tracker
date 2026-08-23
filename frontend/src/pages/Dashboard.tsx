@@ -9,6 +9,11 @@ import NewsPage from './News';
 import AINewsPage from './AINews';
 import PortfolioSuggestions from './PortfolioSuggestions';
 
+const formatCurrency = (amount: number | null | undefined): string => {
+    if (amount === null || amount === undefined || isNaN(amount)) return '0.00';
+    return amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+};
+
 const Dashboard = () => {
     const [summary, setSummary] = useState<any>(null);
     const [allocation, setAllocation] = useState<any>(null);
@@ -277,8 +282,6 @@ const Dashboard = () => {
             alert("Error generating PDF: " + (err.message || err.toString()));
         }
     };
-
-    const COLORS = ['#8B5CF6', '#3B82F6', '#EC4899', '#10B981', '#F59E0B', '#64748B'];
 
     if (error) return (
         <div className="flex items-center justify-center h-screen bg-midnight text-danger">
