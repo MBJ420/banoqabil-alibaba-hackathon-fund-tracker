@@ -77,9 +77,9 @@ const Dashboard = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                // Add a timeout to prevent infinite loading
+                // Add a generous timeout so a slow (but alive) backend doesn't crash the dashboard
                 const timeoutPromise = new Promise((_, reject) =>
-                    setTimeout(() => reject(new Error("Request timed out")), 5000)
+                    setTimeout(() => reject(new Error("Request timed out. The server may be busy — try again.")), 30000)
                 );
 
                 const params = new URLSearchParams();
@@ -263,8 +263,6 @@ const Dashboard = () => {
             alert("Error generating PDF: " + (err.message || err.toString()));
         }
     };
-
-    const COLORS = ['#8B5CF6', '#3B82F6', '#EC4899', '#10B981', '#F59E0B', '#64748B'];
 
     if (error) return (
         <div className="flex items-center justify-center h-screen bg-midnight text-danger">
