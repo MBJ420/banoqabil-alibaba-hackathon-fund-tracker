@@ -16,6 +16,15 @@ const formatCurrency = (amount: number | null | undefined): string => {
     return amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 };
 
+const formatPKR = (amount: number | null | undefined): string =>
+    `PKR ${(amount ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+const toLacs = (amount: number): string =>
+    `${(amount / 100000).toLocaleString(undefined, { maximumFractionDigits: 2 })} Lacs`;
+
+const toCrores = (amount: number): string =>
+    `${(amount / 10000000).toLocaleString(undefined, { maximumFractionDigits: 2 })} Crore`;
+
 const Dashboard = () => {
     const [summary, setSummary] = useState<any>(null);
     const [allocation, setAllocation] = useState<any>(null);
@@ -528,29 +537,63 @@ const Dashboard = () => {
                             )}
                         </div>
 
-                        {/* KPI Grid */}
+                        {/* KPI Grid — Hero Net Worth + secondary metrics */}
+                        {(() => {
+                            const nw = summary.total_net_worth || 0;
+                            const invested = summary.total_invested || 0;
+                            const gain = summary.total_gain_loss || 0;
+                            const roi = invested > 0 ? (gain / invested) * 100 : 0;
+                            return (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-6">
+                                {/* Hero Net Worth card */}
+                                <div className="md:col-span-2 lg:col-span-6 relative overflow-hidden rounded-2xl p-6 bg-gradient-to-br from-emerald-600 to-emerald-800 text-white shadow-xl shadow-emerald-500/20 border border-emerald-400/20">
+                                    <div className="absolute -top-12 -right-12 w-48 h-48 bg-white/10 rounded-full blur-3xl pointer-events-none" />
+                                    <div className="relative flex items-center justify-between mb-4">
+                                        <div className="flex items-center gap-2 text-emerald-50/90">
+                                            <Activity size={18} />
+                                            <span className="text-xs font-semibold uppercase tracking-wider">Total Net Worth</span>
+                                        </div>
+                                        <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/15 text-[10px] font-semibold text-emerald-50">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-300 animate-pulse" /> MUFAP Live
+                                        </span>
+                                    </div>
+                                    <p className="relative text-4xl font-bold font-mono tracking-tight tabular-nums">
+                                        {formatPKR(nw)}
+                                    </p>
+                                    <div className="relative mt-3 flex flex-wrap items-center gap-3 text-sm">
+                                        <span
+                                            className="text-emerald-50/90 cursor-default"
+                                            title={`${toCrores(nw)}  •  ${toLacs(nw)}`}
+                                        >
+                                            ≈ {toCrores(nw)}
+                                        </span>
+                                        <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${roi >= 0 ? 'bg-white/15 text-emerald-50' : 'bg-red-500/30 text-red-100'}`}>
+                                            {roi >= 0 ? '▲' : '▼'} {Math.abs(roi).toFixed(2)}% ROI
+                                        </span>
+                                    </div>
+                                </div>
 
-
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                            <KPICard
-                                title="Net Worth"
-                                value={`PKR ${(summary.total_net_worth || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-                            />
-                            <KPICard
-                                title="Total Invested"
-                                value={`PKR ${(summary.total_invested || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-                            />
-                            <KPICard
-                                title="Total Gain / Loss"
-                                value={`PKR ${(summary.total_gain_loss || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-                            />
-                            <KPICard
-                                title="Top Performer"
-                                value={summary.top_performing_bank}
-                                subtitle="Best ROI"
-                            />
-                        </div>
+                                <KPICard
+                                    className="md:col-span-1 lg:col-span-2"
+                                    title="Total Invested"
+                                    value={formatPKR(invested)}
+                                />
+                                <KPICard
+                                    className="md:col-span-1 lg:col-span-2"
+                                    title="Total Gain / Loss"
+                                    value={formatPKR(gain)}
+                                    tone={gain >= 0 ? 'up' : 'down'}
+                                    badge={gain >= 0 ? 'Profit' : 'Loss'}
+                                />
+                                <KPICard
+                                    className="md:col-span-2 lg:col-span-2"
+                                    title="Top Performer"
+                                    value={summary.top_performing_bank || '—'}
+                                    badge="Best ROI"
+                                />
+                            </div>
+                            );
+                        })()}
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                             {/* Line Chart */}
                             <div className="lg:col-span-2 bg-surface border border-[var(--color-white-5)] rounded-2xl p-6 relative group flex flex-col">
@@ -1353,16 +1396,18 @@ const NavItem = ({ icon, label, active, isOpen, onClick }: any) => (
     </button>
 );
 
-const KPICard = ({ title, value, subtitle }: any) => (
-    <div className="bg-surface border border-[var(--color-white-5)] rounded-xl p-6 hover:border-[var(--color-white-10)] transition-all shadow-sm group relative">
-        <div className="flex justify-between items-start">
-            <div>
-                <h3 className="text-text-secondary text-xs font-semibold uppercase tracking-wider mb-1">{title}</h3>
-                <p className="text-[10px] text-text-secondary font-mono tracking-tighter">PKR</p>
-                <p className="text-2xl font-bold text-text-primary mt-1">{value}</p>
-                {subtitle && <p className="text-xs text-text-secondary mt-1">{subtitle}</p>}
-            </div>
+const KPICard = ({ title, value, subtitle, badge, tone, className }: any) => (
+    <div className={`bg-surface border border-[var(--color-white-5)] rounded-xl p-5 hover:border-[var(--color-white-10)] transition-all shadow-sm group relative flex flex-col justify-between ${className || ''}`}>
+        <div className="flex justify-between items-start gap-2">
+            <h3 className="text-text-secondary text-[11px] font-semibold uppercase tracking-wider">{title}</h3>
+            {badge && (
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 whitespace-nowrap">
+                    {badge}
+                </span>
+            )}
         </div>
+        <p className={`mt-2 text-xl font-bold font-mono tabular-nums tracking-tight ${tone === 'down' ? 'text-danger' : tone === 'up' ? 'text-success' : 'text-text-primary'}`}>{value}</p>
+        {subtitle && <p className="text-xs text-text-secondary mt-1">{subtitle}</p>}
     </div>
 );
 
