@@ -23,4 +23,25 @@ client.interceptors.request.use(
     }
 );
 
+// Add a response interceptor to handle expired/invalid JWT sessions.
+// On 401 from any protected endpoint we clear the stale token and send the
+// user back to /login with a "session expired" flag. Auth endpoints
+// (/token, /users/) are excluded so invalid credentials still surface inline.
+client.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        const url = error.config?.url || '';
+        const isAuthEndpoint = url.includes('/token') || url.includes('/users/');
+        if (error.response?.status === 401 && !isAuthEndpoint) {
+            localStorage.removeItem('token');
+            localStorage.removeItem('username');
+            localStorage.setItem('session_expired', 'true');
+            if (window.location.pathname !== '/login') {
+                window.location.href = '/login';
+            }
+        }
+        return Promise.reject(error);
+    }
+);
+
 export default client;

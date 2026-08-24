@@ -1,16 +1,23 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import client from '../api/client';
-import { Lock, User } from 'lucide-react';
+import { Lock, User, Loader2 } from 'lucide-react';
 
 const Register = () => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
     const navigate = useNavigate();
 
     const handleRegister = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!username.trim() || !password.trim()) {
+            setError('Username and password are required.');
+            return;
+        }
+        setError('');
+        setIsLoading(true);
         try {
             await client.post('/users/', { username, password });
             navigate('/login');
@@ -18,6 +25,8 @@ const Register = () => {
             const errorMessage = err.response?.data?.detail || err.message || 'Registration failed';
             setError(errorMessage);
             console.error(err);
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -59,9 +68,11 @@ const Register = () => {
                     </div>
                     <button
                         type="submit"
-                        className="w-full p-3 font-bold text-white bg-emerald-600 rounded-xl hover:bg-emerald-700 transition-colors shadow-lg shadow-emerald-500/20 mt-2"
+                        disabled={isLoading}
+                        className="w-full p-3 font-bold text-white bg-emerald-600 rounded-xl hover:bg-emerald-700 transition-colors shadow-lg shadow-emerald-500/20 mt-2 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                     >
-                        Register
+                        {isLoading && <Loader2 size={18} className="animate-spin" />}
+                        {isLoading ? 'Creating account...' : 'Register'}
                     </button>
                 </form>
                 <p className="text-center text-sm text-text-secondary">
