@@ -4,7 +4,7 @@ import client from '../api/client';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import ReactApexChart from 'react-apexcharts';
 import type { ApexOptions } from 'apexcharts';
-import { LogOut, LayoutDashboard, Database, TrendingUp, Zap, ArrowUpRight, ArrowDownRight, Activity, Menu, Building2, Download, FileText, Sun, Moon, Calculator, Info, Search, UploadCloud, ChevronDown, ChevronUp, Filter, Newspaper, Brain, Lightbulb, X, Eye, EyeOff } from 'lucide-react';
+import { LogOut, LayoutDashboard, Database, TrendingUp, Zap, ArrowUpRight, ArrowDownRight, Activity, Menu, Building2, Download, FileText, Sun, Moon, Calculator, Info, Search, UploadCloud, ChevronDown, ChevronUp, Filter, Newspaper, Brain, Lightbulb, X, Eye, EyeOff, PiggyBank } from 'lucide-react';
 import StatementUploadModal from '../components/StatementUploadModal';
 import { useToast } from '../components/Toast';
 
@@ -398,6 +398,18 @@ const Dashboard = () => {
                             active={currentPage === '/suggestions'}
                             isOpen={isSidebarOpen}
                             onClick={() => navigate('/suggestions')}
+                        />
+                    </div>
+
+                    {/* PLANNER Section */}
+                    <div className="mb-6">
+                        <p className={`text-xs font-semibold text-text-secondary mb-2 px-3 tracking-wider ${!isSidebarOpen && 'hidden xl:block'}`}>PLANNER</p>
+                        <NavItem
+                            icon={<PiggyBank size={20} />}
+                            label="Inflation & SIP"
+                            active={currentPage === '/simulator'}
+                            isOpen={isSidebarOpen}
+                            onClick={() => navigate('/simulator')}
                         />
                     </div>
 
