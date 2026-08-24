@@ -4,7 +4,7 @@ import client from '../api/client';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import ReactApexChart from 'react-apexcharts';
 import type { ApexOptions } from 'apexcharts';
-import { LogOut, LayoutDashboard, Database, TrendingUp, Zap, ArrowUpRight, Activity, Menu, Building2, Download, FileText, Sun, Moon, Calculator, Info, Search, UploadCloud, ChevronDown, ChevronUp, Filter, Newspaper, Brain, Lightbulb, X, Eye, EyeOff, PiggyBank, Receipt, LineChart } from 'lucide-react';
+import { LogOut, LayoutDashboard, Database, TrendingUp, Zap, ArrowUpRight, Activity, Menu, Building2, Download, FileText, Sun, Moon, Calculator, Info, Search, UploadCloud, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Filter, Newspaper, Brain, Lightbulb, X, Eye, EyeOff, PiggyBank, Receipt, LineChart } from 'lucide-react';
 import StatementUploadModal from '../components/StatementUploadModal';
 import { useToast } from '../components/Toast';
 
@@ -337,27 +337,37 @@ const Dashboard = () => {
                     onClick={() => setIsSidebarOpen(false)}
                 />
             )}
-
             {/* Sidebar */}
             <aside className={`
-                fixed lg:static inset-y-0 left-0 w-64 bg-surface border-r border-[var(--color-white-5)] flex flex-col transition-transform duration-300 z-30
-                ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0 lg:w-20 xl:w-64'}
+                fixed lg:static inset-y-0 left-0 bg-surface border-r border-[var(--color-white-5)] flex flex-col transition-all duration-300 ease-in-out z-30
+                ${isSidebarOpen ? 'w-64 translate-x-0' : '-translate-x-full lg:translate-x-0 lg:w-20'}
             `}>
-                <div className="p-6 flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-gold to-amber-600 flex items-center justify-center shadow-lg shadow-gold/20 shrink-0">
-                        <Activity className="text-white w-5 h-5" />
+                <div className="p-4 flex items-center justify-between border-b border-[var(--color-white-5)] shrink-0">
+                    <div className="flex items-center gap-3 overflow-hidden">
+                        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-gold to-amber-600 flex items-center justify-center shadow-lg shadow-gold/20 shrink-0">
+                            <Activity className="text-white w-5 h-5" />
+                        </div>
+                        {isSidebarOpen && (
+                            <div className="transition-opacity duration-300 whitespace-nowrap overflow-hidden">
+                                <h1 className="text-lg font-bold tracking-tight text-white leading-none">
+                                    FundTracker
+                                </h1>
+                                <p className="text-[10px] text-text-secondary mt-0.5">Wealth Management</p>
+                            </div>
+                        )}
                     </div>
-                    <div className={`transition-opacity duration-300 ${isSidebarOpen ? 'opacity-100' : 'opacity-0 lg:hidden xl:block xl:opacity-100'}`}>
-                        <h1 className="text-xl font-bold tracking-tight text-white leading-none">
-                            FundTracker
-                        </h1>
-                        <p className="text-[10px] text-text-secondary mt-0.5">Wealth Management</p>
-                    </div>
+                    <button
+                        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                        className="p-1.5 rounded-lg bg-[var(--color-white-5)] hover:bg-[var(--color-white-10)] text-text-secondary hover:text-white transition-colors"
+                        title={isSidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
+                    >
+                        {isSidebarOpen ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
+                    </button>
                 </div>
 
-                <nav className="flex-1 px-4 space-y-2 mt-4 overflow-y-auto custom-scrollbar">
+                <nav className="flex-1 px-3 space-y-2 mt-4 overflow-y-auto custom-scrollbar">
                     <div className="mb-6">
-                        <p className={`text-xs font-semibold text-text-secondary mb-2 px-3 tracking-wider ${!isSidebarOpen && 'hidden xl:block'}`}>OVERVIEW</p>
+                        <p className={`text-[10px] font-semibold text-text-secondary mb-2 px-3 tracking-wider ${!isSidebarOpen ? 'hidden' : 'block'}`}>OVERVIEW</p>
                         <NavItem
                             icon={<LayoutDashboard size={20} />}
                             label="Global Portfolio"
@@ -368,7 +378,7 @@ const Dashboard = () => {
                     </div>
 
                     <div className="mb-6">
-                        <p className={`text-xs font-semibold text-text-secondary mb-2 px-3 tracking-wider ${!isSidebarOpen && 'hidden xl:block'}`}>INSTITUTIONS</p>
+                        <p className={`text-[10px] font-semibold text-text-secondary mb-2 px-3 tracking-wider ${!isSidebarOpen ? 'hidden' : 'block'}`}>INSTITUTIONS</p>
                         <NavItem icon={<Building2 size={20} />} label="Meezan Bank" active={selectedBank === 'Meezan' && currentPage === '/'} isOpen={isSidebarOpen} onClick={() => { setSelectedBank('Meezan'); navigate('/'); }} />
                         <NavItem icon={<Building2 size={20} />} label="HBL" active={selectedBank === 'HBL' && currentPage === '/'} isOpen={isSidebarOpen} onClick={() => { setSelectedBank('HBL'); navigate('/'); }} />
                         <NavItem icon={<Building2 size={20} />} label="Atlas Funds" active={selectedBank === 'Atlas' && currentPage === '/'} isOpen={isSidebarOpen} onClick={() => { setSelectedBank('Atlas'); navigate('/'); }} />
@@ -377,7 +387,7 @@ const Dashboard = () => {
 
                     {/* NEWS Section */}
                     <div className="mb-6">
-                        <p className={`text-xs font-semibold text-text-secondary mb-2 px-3 tracking-wider ${!isSidebarOpen && 'hidden xl:block'}`}>NEWS</p>
+                        <p className={`text-[10px] font-semibold text-text-secondary mb-2 px-3 tracking-wider ${!isSidebarOpen ? 'hidden' : 'block'}`}>MARKET INTEL</p>
                         <NavItem
                             icon={<Newspaper size={20} />}
                             label="Market News"
@@ -387,7 +397,7 @@ const Dashboard = () => {
                         />
                         <NavItem
                             icon={<Brain size={20} />}
-                            label="AI Analysis"
+                            label="AI News Insights"
                             active={currentPage === '/ai-news'}
                             isOpen={isSidebarOpen}
                             onClick={() => navigate('/ai-news')}
@@ -403,7 +413,7 @@ const Dashboard = () => {
 
                     {/* PLANNER Section */}
                     <div className="mb-6">
-                        <p className={`text-xs font-semibold text-text-secondary mb-2 px-3 tracking-wider ${!isSidebarOpen && 'hidden xl:block'}`}>PLANNER</p>
+                        <p className={`text-[10px] font-semibold text-text-secondary mb-2 px-3 tracking-wider ${!isSidebarOpen ? 'hidden' : 'block'}`}>PLANNER</p>
                         <NavItem
                             icon={<PiggyBank size={20} />}
                             label="Inflation & SIP"
@@ -429,16 +439,16 @@ const Dashboard = () => {
 
                 </nav>
 
-                <div className="p-4 border-t border-[var(--color-white-5)]">
-                    <button onClick={handleLogout} className={`flex items-center gap-3 text-text-secondary hover:text-white hover:bg-[var(--color-white-5)] p-3 rounded-xl transition-all w-full group ${!isSidebarOpen && 'justify-center'}`}>
-                        <LogOut size={20} className="group-hover:text-danger transition-colors" />
-                        <span className={`${isSidebarOpen ? 'block' : 'hidden xl:block'} font-medium`}>Logout</span>
+                <div className="p-3 border-t border-[var(--color-white-5)]">
+                    <button onClick={handleLogout} className={`flex items-center gap-3 text-text-secondary hover:text-white hover:bg-[var(--color-white-5)] p-3 rounded-xl transition-all w-full group ${!isSidebarOpen && 'justify-center'}`} title={!isSidebarOpen ? "Logout" : ""}>
+                        <LogOut size={20} className="group-hover:text-danger transition-colors shrink-0" />
+                        {isSidebarOpen && <span className="font-medium whitespace-nowrap">Logout</span>}
                     </button>
                 </div>
             </aside>
 
             {/* Main Content */}
-            <main className="flex-1 flex flex-col overflow-hidden relative">
+            <main className="flex-1 flex flex-col overflow-hidden relative min-w-0">
                 {/* Background Glow */}
                 <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-emerald-500/5 blur-[120px] rounded-full pointer-events-none" />
 
@@ -447,11 +457,12 @@ const Dashboard = () => {
                 <>
 
                 {/* Header */}
-                <header className="px-8 py-6 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[var(--color-white-5)] bg-surface/50 backdrop-blur-xl sticky top-0 z-10">
-                    <div className="flex items-center gap-4">
+                <header className="px-6 md:px-8 py-5 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[var(--color-white-5)] bg-surface/50 backdrop-blur-xl sticky top-0 z-10">
+                    <div className="flex items-center gap-3 md:gap-4">
                         <button
                             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                            className="p-2 bg-[var(--color-white-5)] hover:bg-[var(--color-white-10)] rounded-xl lg:hidden text-text-secondary hover:text-text-primary transition-colors"
+                            className="p-2 bg-[var(--color-white-5)] hover:bg-[var(--color-white-10)] rounded-xl text-text-secondary hover:text-text-primary transition-colors"
+                            title={isSidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
                         >
                             <Menu size={20} />
                         </button>
@@ -567,11 +578,11 @@ const Dashboard = () => {
                             const gain = summary.total_gain_loss || 0;
                             const roi = invested > 0 ? (gain / invested) * 100 : 0;
                             return (
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-6">
+                            <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
                                 {/* Hero Net Worth card */}
-                                <div className="md:col-span-2 lg:col-span-6 relative overflow-hidden rounded-2xl p-6 bg-gradient-to-br from-emerald-600 to-emerald-800 text-white shadow-xl shadow-emerald-500/20 border border-emerald-400/20">
+                                <div className="lg:col-span-5 relative overflow-hidden rounded-2xl p-6 bg-gradient-to-br from-emerald-600 to-emerald-800 text-white shadow-xl shadow-emerald-500/20 border border-emerald-400/20 flex flex-col justify-between min-w-0">
                                     <div className="absolute -top-12 -right-12 w-48 h-48 bg-white/10 rounded-full blur-3xl pointer-events-none" />
-                                    <div className="relative flex items-center justify-between mb-4">
+                                    <div className="relative flex items-center justify-between mb-3">
                                         <div className="flex items-center gap-2 text-emerald-50/90">
                                             <Activity size={18} />
                                             <span className="text-xs font-semibold uppercase tracking-wider">Total Net Worth</span>
@@ -580,12 +591,12 @@ const Dashboard = () => {
                                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-300 animate-pulse" /> MUFAP Live
                                         </span>
                                     </div>
-                                    <p className="relative text-4xl font-bold font-mono tracking-tight tabular-nums">
+                                    <p className="relative text-2xl sm:text-3xl xl:text-4xl font-bold font-mono tracking-tight tabular-nums truncate" title={formatPKR(nw)}>
                                         {formatPKR(nw)}
                                     </p>
                                     <div className="relative mt-3 flex flex-wrap items-center gap-3 text-sm">
                                         <span
-                                            className="text-emerald-50/90 cursor-default"
+                                            className="text-emerald-50/90 font-medium cursor-default"
                                             title={`${toCrores(nw)}  •  ${toLacs(nw)}`}
                                         >
                                             ≈ {toCrores(nw)}
@@ -596,24 +607,27 @@ const Dashboard = () => {
                                     </div>
                                 </div>
 
-                                <KPICard
-                                    className="md:col-span-1 lg:col-span-2"
-                                    title="Total Invested"
-                                    value={formatPKR(invested)}
-                                />
-                                <KPICard
-                                    className="md:col-span-1 lg:col-span-2"
-                                    title="Total Gain / Loss"
-                                    value={formatPKR(gain)}
-                                    tone={gain >= 0 ? 'up' : 'down'}
-                                    badge={gain >= 0 ? 'Profit' : 'Loss'}
-                                />
-                                <KPICard
-                                    className="md:col-span-2 lg:col-span-2"
-                                    title="Top Performer"
-                                    value={summary.top_performing_bank || '—'}
-                                    badge="Best ROI"
-                                />
+                                {/* 3 Secondary KPI Cards */}
+                                <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                    <KPICard
+                                        title="Total Invested"
+                                        value={formatPKR(invested)}
+                                        subtitle={invested > 0 ? `≈ ${toCrores(invested)}` : undefined}
+                                    />
+                                    <KPICard
+                                        title="Total Gain / Loss"
+                                        value={formatPKR(gain)}
+                                        subtitle={gain !== 0 ? `≈ ${toCrores(gain)}` : undefined}
+                                        tone={gain >= 0 ? 'up' : 'down'}
+                                        badge={gain >= 0 ? 'Profit' : 'Loss'}
+                                    />
+                                    <KPICard
+                                        title="Top Performer"
+                                        value={summary.top_performing_bank || '—'}
+                                        badge="Best ROI"
+                                        subtitle="Leading Asset Manager"
+                                    />
+                                </div>
                             </div>
                             );
                         })()}
@@ -1422,17 +1436,21 @@ const NavItem = ({ icon, label, active, isOpen, onClick }: any) => (
 );
 
 const KPICard = ({ title, value, subtitle, badge, tone, className }: any) => (
-    <div className={`bg-surface border border-[var(--color-white-5)] rounded-xl p-5 hover:border-[var(--color-white-10)] transition-all shadow-sm group relative flex flex-col justify-between ${className || ''}`}>
-        <div className="flex justify-between items-start gap-2">
-            <h3 className="text-text-secondary text-[11px] font-semibold uppercase tracking-wider">{title}</h3>
+    <div className={`bg-surface border border-[var(--color-white-5)] rounded-2xl p-5 hover:border-[var(--color-white-10)] transition-all shadow-sm group relative flex flex-col justify-between overflow-hidden min-w-0 ${className || ''}`}>
+        <div className="flex justify-between items-start gap-2 mb-1">
+            <h3 className="text-text-secondary text-[11px] font-semibold uppercase tracking-wider truncate" title={title}>{title}</h3>
             {badge && (
-                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 whitespace-nowrap">
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 whitespace-nowrap shrink-0">
                     {badge}
                 </span>
             )}
         </div>
-        <p className={`mt-2 text-xl font-bold font-mono tabular-nums tracking-tight ${tone === 'down' ? 'text-danger' : tone === 'up' ? 'text-success' : 'text-text-primary'}`}>{value}</p>
-        {subtitle && <p className="text-xs text-text-secondary mt-1">{subtitle}</p>}
+        <p className={`mt-1 text-base sm:text-lg xl:text-xl font-bold font-mono tabular-nums tracking-tight truncate ${tone === 'down' ? 'text-danger' : tone === 'up' ? 'text-success' : 'text-text-primary'}`} title={value}>
+            {value}
+        </p>
+        {subtitle ? (
+            <p className="text-xs text-text-secondary mt-1 font-medium truncate" title={subtitle}>{subtitle}</p>
+        ) : <div className="h-4" />}
     </div>
 );
 
