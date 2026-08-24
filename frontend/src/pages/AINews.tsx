@@ -1,9 +1,9 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, type ReactNode } from 'react';
 import client from '../api/client';
 import {
   Brain, RefreshCw, TrendingUp, TrendingDown, Minus,
   Globe, ChevronDown, ChevronUp, AlertCircle, Sparkles,
-  BarChart2, Clock, Zap
+  BarChart2, Clock, Zap, X, Coins, Banknote, Landmark
 } from 'lucide-react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -39,9 +39,12 @@ interface WorldContextEntry {
 
 const ASSET_ORDER = ['PSX Stocks (Equity Funds)', 'Money Market', 'Income Funds', 'Gold', 'Silver'];
 
-const ASSET_ICONS: Record<string, string> = {
-  'PSX Stocks (Equity Funds)': '📈', Gold: '🪙', Silver: '🥈',
-  'Money Market': '💵', 'Income Funds': '🏦',
+const ASSET_ICONS: Record<string, ReactNode> = {
+  'PSX Stocks (Equity Funds)': <TrendingUp size={22} className="text-emerald-400" />,
+  Gold: <Coins size={22} className="text-amber-400" />,
+  Silver: <Coins size={22} className="text-slate-300" />,
+  'Money Market': <Banknote size={22} className="text-sky-400" />,
+  'Income Funds': <Landmark size={22} className="text-indigo-400" />,
 };
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -111,7 +114,7 @@ function timeAgo(isoStr: string | null): string {
 
 function AssetRow({ assetClass, data }: { assetClass: string; data: AssetPrediction }) {
   const [expanded, setExpanded] = useState(false);
-  const icon = ASSET_ICONS[assetClass] || '📊';
+  const icon = ASSET_ICONS[assetClass] ?? <BarChart2 size={22} className="text-text-secondary" />;
 
   const tiers = [
     { label: 'Short', key: 'short', horizon: 'Short-term (days)', value: data.short },
@@ -135,7 +138,7 @@ function AssetRow({ assetClass, data }: { assetClass: string; data: AssetPredict
         onClick={() => setExpanded(e => !e)}
         className="w-full flex items-center gap-4 p-4 text-left hover:bg-white/3 transition-colors"
       >
-        <span className="text-2xl shrink-0">{icon}</span>
+        <span className="shrink-0 flex items-center">{icon}</span>
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between gap-2 flex-wrap">
@@ -420,7 +423,7 @@ export default function AINews() {
                             title="Mark as resolved"
                             className="shrink-0 p-1.5 text-text-secondary hover:text-danger hover:bg-danger/10 rounded-lg transition-all opacity-0 group-hover:opacity-100"
                           >
-                            <Zap size={13} className="rotate-45" />
+                            <X size={13} />
                           </button>
                         </div>
                       );

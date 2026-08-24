@@ -4,7 +4,7 @@ import client from '../api/client';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import ReactApexChart from 'react-apexcharts';
 import type { ApexOptions } from 'apexcharts';
-import { LogOut, LayoutDashboard, Database, TrendingUp, Zap, ArrowUpRight, ArrowDownRight, Activity, Menu, Building2, Download, FileText, Sun, Moon, Calculator, Info, Search, UploadCloud, ChevronDown, ChevronUp, Filter, Newspaper, Brain, Lightbulb } from 'lucide-react';
+import { LogOut, LayoutDashboard, Database, TrendingUp, Zap, ArrowUpRight, Activity, Menu, Building2, Download, FileText, Sun, Moon, Calculator, Info, Search, UploadCloud, ChevronDown, ChevronUp, Filter, Newspaper, Brain, Lightbulb, X, Eye, EyeOff } from 'lucide-react';
 import NewsPage from './News';
 import AINewsPage from './AINews';
 import PortfolioSuggestions from './PortfolioSuggestions';
@@ -642,7 +642,7 @@ const Dashboard = () => {
                                                 stroke="none"
                                             >
                                                 {allocation?.map((_: any, index: number) => (
-                                                    <Cell key={`cell-${index}`} fill={['#3B82F6', '#10B981', '#F59E0B', '#FFFFFF', '#8B5CF6', '#EF4444'][index % 6]} />
+                                                    <Cell key={`cell-${index}`} fill={['#3B82F6', '#10B981', '#F59E0B', '#EC4899', '#8B5CF6', '#EF4444'][index % 6]} />
                                                 ))}
                                             </Pie>
                                             <Tooltip
@@ -818,7 +818,7 @@ const Dashboard = () => {
                                 onClick={() => setIsCalculatorModalOpen(false)}
                                 className="absolute top-4 right-4 p-2 text-text-secondary hover:text-white bg-[var(--color-white-5)] hover:bg-[var(--color-white-10)] rounded-full transition-colors"
                             >
-                                <Zap size={16} className="rotate-45" /> {/* Close Icon Approximation */}
+                                <X size={16} />
                             </button>
 
                             <div className="flex items-center gap-3 mb-6">
@@ -875,7 +875,7 @@ const Dashboard = () => {
                                 onClick={() => setIsPerformanceModalOpen(false)}
                                 className="absolute top-4 right-4 p-2 text-text-secondary hover:text-white bg-[var(--color-white-5)] hover:bg-danger/20 rounded-full transition-colors z-10"
                             >
-                                <Zap size={16} className="rotate-45" /> {/* Close Icon Approximation */}
+                                <X size={16} />
                             </button>
 
                             <div className="flex items-center gap-3 mb-6 shrink-0 z-0">
@@ -1077,7 +1077,7 @@ const Dashboard = () => {
                                 onClick={() => setIsStatementDetailsOpen(false)}
                                 className="absolute top-4 right-4 p-2 text-text-secondary hover:text-white bg-[var(--color-white-5)] hover:bg-danger/20 rounded-full transition-colors z-10"
                             >
-                                <Zap size={16} className="rotate-45" />
+                                <X size={16} />
                             </button>
 
                             <div className="flex items-center justify-between mb-8">
@@ -1152,7 +1152,7 @@ const Dashboard = () => {
                                 onClick={() => setIsPdfSettingsOpen(false)}
                                 className="absolute top-4 right-4 p-2 text-text-secondary hover:text-white bg-[var(--color-white-5)] hover:bg-danger/20 rounded-full transition-colors"
                             >
-                                <Zap size={16} className="rotate-45" />
+                                <X size={16} />
                             </button>
 
                             <div className="flex items-center gap-3 mb-6">
@@ -1195,7 +1195,7 @@ const Dashboard = () => {
                                                     className="absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary hover:text-text-primary transition-colors"
                                                     onClick={() => setPdfPasswordVisible(p => ({ ...p, [bank]: !p[bank] }))}
                                                 >
-                                                    {pdfPasswordVisible[bank] ? <ArrowDownRight size={14} /> : <ArrowUpRight size={14} />}
+                                                    {pdfPasswordVisible[bank] ? <EyeOff size={14} /> : <Eye size={14} />}
                                                 </button>
                                             </div>
                                             <button
