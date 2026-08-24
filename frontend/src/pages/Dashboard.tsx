@@ -4,7 +4,7 @@ import client from '../api/client';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import ReactApexChart from 'react-apexcharts';
 import type { ApexOptions } from 'apexcharts';
-import { LogOut, LayoutDashboard, Database, TrendingUp, Zap, ArrowUpRight, ArrowDownRight, Activity, Menu, Building2, Download, FileText, Sun, Moon, Calculator, Info, Search, UploadCloud, ChevronDown, ChevronUp, Filter, Newspaper, Brain, Lightbulb, X, Eye, EyeOff, PiggyBank, Receipt } from 'lucide-react';
+import { LogOut, LayoutDashboard, Database, TrendingUp, Zap, ArrowUpRight, ArrowDownRight, Activity, Menu, Building2, Download, FileText, Sun, Moon, Calculator, Info, Search, UploadCloud, ChevronDown, ChevronUp, Filter, Newspaper, Brain, Lightbulb, X, Eye, EyeOff, PiggyBank, Receipt, LineChart } from 'lucide-react';
 import StatementUploadModal from '../components/StatementUploadModal';
 import { useToast } from '../components/Toast';
 
@@ -401,7 +401,6 @@ const Dashboard = () => {
                         />
                     </div>
 
-<<<<<<< HEAD
                     {/* PLANNER Section */}
                     <div className="mb-6">
                         <p className={`text-xs font-semibold text-text-secondary mb-2 px-3 tracking-wider ${!isSidebarOpen && 'hidden xl:block'}`}>PLANNER</p>
@@ -418,6 +417,13 @@ const Dashboard = () => {
                             active={currentPage === '/tax'}
                             isOpen={isSidebarOpen}
                             onClick={() => navigate('/tax')}
+                        />
+                        <NavItem
+                            icon={<LineChart size={20} />}
+                            label="Benchmark Alpha"
+                            active={currentPage === '/benchmark'}
+                            isOpen={isSidebarOpen}
+                            onClick={() => navigate('/benchmark')}
                         />
                     </div>
 
