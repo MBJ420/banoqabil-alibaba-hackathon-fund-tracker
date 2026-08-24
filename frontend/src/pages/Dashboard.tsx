@@ -4,10 +4,11 @@ import client from '../api/client';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import ReactApexChart from 'react-apexcharts';
 import type { ApexOptions } from 'apexcharts';
-import { LogOut, LayoutDashboard, Database, TrendingUp, Zap, ArrowUpRight, ArrowDownRight, Activity, Menu, Building2, Download, FileText, Sun, Moon, Calculator, Info, Search, UploadCloud, ChevronDown, ChevronUp, Filter, Newspaper, Brain, Lightbulb } from 'lucide-react';
+import { LogOut, LayoutDashboard, Database, TrendingUp, Zap, ArrowUpRight, ArrowDownRight, Activity, Menu, Building2, Download, FileText, Sun, Moon, Calculator, Info, Search, UploadCloud, ChevronDown, ChevronUp, Filter, Newspaper, Brain, Lightbulb, PiggyBank } from 'lucide-react';
 import NewsPage from './News';
 import AINewsPage from './AINews';
 import PortfolioSuggestions from './PortfolioSuggestions';
+import InflationSimulator from './InflationSimulator';
 import StatementUploadModal from '../components/StatementUploadModal';
 import { useToast } from '../components/Toast';
 
@@ -391,6 +392,18 @@ const Dashboard = () => {
                         />
                     </div>
 
+                    {/* PLANNER Section */}
+                    <div className="mb-6">
+                        <p className={`text-xs font-semibold text-text-secondary mb-2 px-3 tracking-wider ${!isSidebarOpen && 'hidden xl:block'}`}>PLANNER</p>
+                        <NavItem
+                            icon={<PiggyBank size={20} />}
+                            label="Inflation & SIP"
+                            active={currentPage === '/simulator'}
+                            isOpen={isSidebarOpen}
+                            onClick={() => navigate('/simulator')}
+                        />
+                    </div>
+
                 </nav>
 
                 <div className="p-4 border-t border-[var(--color-white-5)]">
@@ -410,6 +423,7 @@ const Dashboard = () => {
                 {currentPage === '/news' && <NewsPage />}
                 {currentPage === '/ai-news' && <AINewsPage />}
                 {currentPage === '/suggestions' && <PortfolioSuggestions />}
+                {currentPage === '/simulator' && <InflationSimulator />}
 
                 {/* Portfolio content — only shown on '/' route */}
                 {currentPage === '/' && <>
