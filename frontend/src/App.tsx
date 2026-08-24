@@ -1,7 +1,12 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import React from 'react';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Register from './pages/Register';
+import NewsPage from './pages/News';
+import AINewsPage from './pages/AINews';
+import PortfolioSuggestions from './pages/PortfolioSuggestions';
+import ErrorBoundary from './components/ErrorBoundary';
 import ToastProvider from './components/Toast';
 
 function App() {
@@ -12,13 +17,17 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route
-            path="/*"
+            path="/"
             element={
               <ProtectedRoute>
                 <Dashboard />
               </ProtectedRoute>
             }
-          />
+          >
+            <Route path="news" element={<ErrorBoundary name="Market News"><NewsPage /></ErrorBoundary>} />
+            <Route path="ai-news" element={<ErrorBoundary name="AI Analysis"><AINewsPage /></ErrorBoundary>} />
+            <Route path="suggestions" element={<ErrorBoundary name="Portfolio Suggestions"><PortfolioSuggestions /></ErrorBoundary>} />
+          </Route>
         </Routes>
       </Router>
     </ToastProvider>
@@ -33,5 +42,4 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
-import React from 'react';
 export default App;
