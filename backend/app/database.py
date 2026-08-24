@@ -34,3 +34,28 @@ def get_db():
         yield db
     finally:
         db.close()
+
+
+def ensure_indexes() -> None:
+    """Create performance indexes if they don't already exist.
+
+    SQLAlchemy's ``create_all`` only creates missing *tables*, not indexes on
+    tables that already exist, so newly added indexes must be applied
+    explicitly. Safe to call on every startup (CREATE INDEX IF NOT EXISTS is a
+    no-op when the index is already present).
+    """
+    from sqlalchemy import text
+
+    indexes = [
+        ("ix_funds_bank_id", "funds", "bank_id"),
+        ("ix_portfolios_user_id", "portfolios", "user_id"),
+        ("ix_portfolios_bank_id", "portfolios", "bank_id"),
+        ("ix_statements_portfolio_id", "statements", "portfolio_id"),
+        ("ix_news_articles_published_at", "news_articles", "published_at"),
+        ("ix_fund_nav_history_fund_date", "fund_nav_history", "fund_id, date"),
+        ("ix_fund_perf_fund_date", "fund_performance_metrics", "fund_id, date"),
+    ]
+    with engine.connect() as conn:
+        for name, table, cols in indexes:
+            conn.execute(text(f"CREATE INDEX IF NOT EXISTS {name} ON {table} ({cols})"))
+        conn.commit()

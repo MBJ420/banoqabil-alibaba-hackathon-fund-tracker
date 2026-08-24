@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Float, JSON, Boolean
+from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Float, JSON, Boolean, Index
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from .database import Base
@@ -26,7 +26,7 @@ class Fund(Base):
     __tablename__ = "funds"
 
     id = Column(Integer, primary_key=True, index=True)
-    bank_id = Column(Integer, ForeignKey("banks.id"))
+    bank_id = Column(Integer, ForeignKey("banks.id"), index=True)
     name = Column(String, index=True)
     short_name = Column(String, nullable=True) # E.g., MCF for Meezan Cash Fund
     category = Column(String)  # Equity, Gold, Money Market, etc.
@@ -50,8 +50,8 @@ class Portfolio(Base):
     __tablename__ = "portfolios"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"))
-    bank_id = Column(Integer, ForeignKey("banks.id"))
+    user_id = Column(Integer, ForeignKey("users.id"), index=True)
+    bank_id = Column(Integer, ForeignKey("banks.id"), index=True)
     account_number = Column(String, index=True) # Portfolio ID/Account Number
     holder_name = Column(String)
 
@@ -63,7 +63,7 @@ class Statement(Base):
     __tablename__ = "statements"
 
     id = Column(Integer, primary_key=True, index=True)
-    portfolio_id = Column(Integer, ForeignKey("portfolios.id"))
+    portfolio_id = Column(Integer, ForeignKey("portfolios.id"), index=True)
     date = Column(String)  # YYYY-MM-DD
     file_path = Column(String)
     raw_data = Column(JSON) # Store parsed data as JSON
@@ -81,6 +81,10 @@ class FundNAVHistory(Base):
 
     fund = relationship("Fund", backref="nav_history")
 
+    __table_args__ = (
+        Index('ix_fund_nav_history_fund_date', 'fund_id', 'date'),
+    )
+
 class FundPerformanceMetrics(Base):
     __tablename__ = "fund_performance_metrics"
 
@@ -93,6 +97,10 @@ class FundPerformanceMetrics(Base):
     return_ytd = Column(Float, nullable=True)
 
     fund = relationship("Fund", backref="performance_metrics")
+
+    __table_args__ = (
+        Index('ix_fund_perf_fund_date', 'fund_id', 'date'),
+    )
 
 
 class UserBankConfig(Base):
@@ -117,7 +125,7 @@ class NewsArticle(Base):
     title = Column(String, nullable=False)
     url = Column(String, nullable=False, unique=True)
     source = Column(String, nullable=False)          # e.g. "Dawn Business", "Business Recorder"
-    published_at = Column(DateTime, nullable=True)
+    published_at = Column(DateTime, nullable=True, index=True)
     summary = Column(String, nullable=True)          # 2-5 sentence extracted summary
     tags = Column(JSON, nullable=True)               # e.g. ["PSX", "Gold", "SBP"]
     relevance_score = Column(Float, nullable=True)   # 0.0 – 1.0 keyword relevance
