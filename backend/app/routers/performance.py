@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.orm import Session
-from sqlalchemy import desc
+from sqlalchemy import desc, func
 from typing import List, Dict, Any
 import os
 import shutil
@@ -108,21 +108,41 @@ def get_bank_performance(bank_name: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail=f"Bank {bank_name} not found")
 
     funds = db.query(Fund).filter(Fund.bank_id == bank.id).all()
+    if not funds:
+        return []
+
+    fund_ids = [f.id for f in funds]
+
+    # Batch-fetch the latest performance metrics for every fund in this bank
+    # with a single aggregate subquery + join (was one query per fund before).
+    metrics_subq = db.query(
+        FundPerformanceMetrics.fund_id,
+        func.max(FundPerformanceMetrics.date).label("max_date"),
+    ).filter(FundPerformanceMetrics.fund_id.in_(fund_ids)).group_by(
+        FundPerformanceMetrics.fund_id
+    ).subquery()
+    latest_metrics_rows = db.query(FundPerformanceMetrics).join(
+        metrics_subq,
+        (FundPerformanceMetrics.fund_id == metrics_subq.c.fund_id)
+        & (FundPerformanceMetrics.date == metrics_subq.c.max_date),
+    ).all()
+    metrics_by_fund = {m.fund_id: m for m in latest_metrics_rows}
+
+    # Batch-fetch the full NAV history for all funds in one query, then group
+    # in memory (was one query per fund for history + one for latest nav).
+    nav_rows = db.query(FundNAVHistory).filter(
+        FundNAVHistory.fund_id.in_(fund_ids)
+    ).order_by(FundNAVHistory.date.asc()).all()
+    nav_by_fund: Dict[int, list] = {}
+    for r in nav_rows:
+        nav_by_fund.setdefault(r.fund_id, []).append(r)
+    latest_nav_by_fund = {fid: rows[-1] for fid, rows in nav_by_fund.items()}
+
     result = []
-
     for fund in funds:
-        latest_metrics = db.query(FundPerformanceMetrics).filter(
-            FundPerformanceMetrics.fund_id == fund.id
-        ).order_by(desc(FundPerformanceMetrics.date)).first()
-
-        latest_nav = db.query(FundNAVHistory).filter(
-            FundNAVHistory.fund_id == fund.id
-        ).order_by(desc(FundNAVHistory.date)).first()
-
-        history_rows = db.query(FundNAVHistory).filter(
-            FundNAVHistory.fund_id == fund.id
-        ).order_by(FundNAVHistory.date.asc()).all()
-
+        latest_metrics = metrics_by_fund.get(fund.id)
+        latest_nav = latest_nav_by_fund.get(fund.id)
+        history_rows = nav_by_fund.get(fund.id, [])
         chart_data = [
             {"date": str(r.date), "nav_price": r.nav_price} for r in history_rows
         ]

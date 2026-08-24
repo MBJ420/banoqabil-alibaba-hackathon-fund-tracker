@@ -8,7 +8,7 @@ if sys.platform == "win32":
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .routers import auth, users, dashboard, performance, news, statements
-from .database import engine, Base
+from .database import engine, Base, ensure_indexes
 from apscheduler.schedulers.background import BackgroundScheduler
 from .services.watcher import Watcher
 from .services.scraper import scrape_mufap_data
@@ -25,6 +25,8 @@ logger = logging.getLogger(__name__)
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
+# Ensure performance indexes exist (create_all does not add indexes to existing tables)
+ensure_indexes()
 
 app = FastAPI(title="Fund Tracker API")
 

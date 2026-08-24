@@ -526,8 +526,6 @@ def get_fund_outperformers(
     Analyzes user's funds against peer funds of the exact same type and returns any 
     peer funds that are outperforming the user's funds by a significant margin.
     """
-    from sqlalchemy import desc
-
     latest_statements, _ = get_latest_statements(db, current_user.id)
     
     # 1. Gather all unique user holdings
@@ -541,6 +539,21 @@ def get_fund_outperformers(
 
     # 2. Match with our DB funds to get fund_type
     all_funds = db.query(models.Fund).all()
+
+    # Pre-fetch the latest performance metrics for EVERY fund in a single
+    # batched query (one aggregate subquery + one join) instead of issuing one
+    # query per fund inside get_fund_metrics.
+    _metrics_subq = db.query(
+        models.FundPerformanceMetrics.fund_id,
+        func.max(models.FundPerformanceMetrics.date).label("max_date"),
+    ).group_by(models.FundPerformanceMetrics.fund_id).subquery()
+    _latest_metrics_rows = db.query(models.FundPerformanceMetrics).join(
+        _metrics_subq,
+        (models.FundPerformanceMetrics.fund_id == _metrics_subq.c.fund_id)
+        & (models.FundPerformanceMetrics.date == _metrics_subq.c.max_date),
+    ).all()
+    metrics_by_fund = {m.fund_id: m for m in _latest_metrics_rows}
+
     fund_map = {f.name.lower(): f for f in all_funds}
     
     matched_user_funds = {} # user_fund_obj -> raw_holding
@@ -562,11 +575,9 @@ def get_fund_outperformers(
                 "source": "matured",
                 "is_active": False
             }
-            
-        latest = db.query(models.FundPerformanceMetrics).filter(
-            models.FundPerformanceMetrics.fund_id == f.id
-        ).order_by(desc(models.FundPerformanceMetrics.date)).first()
-        
+
+        latest = metrics_by_fund.get(f.id)
+
         m_1m = latest.return_1m if (latest and latest.return_1m != 0.0) else (f.fmr_return_1m or None)
         m_6m = latest.return_6m if (latest and latest.return_6m != 0.0) else (f.fmr_return_6m or None)
         m_1y = latest.return_1y if (latest and latest.return_1y != 0.0) else (f.fmr_return_1y or None)

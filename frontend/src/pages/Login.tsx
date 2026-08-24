@@ -1,16 +1,31 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import client from '../api/client';
-import { Lock, User } from 'lucide-react';
+import { Lock, User, Loader2 } from 'lucide-react';
 
 const Login = () => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+    const [sessionExpired, setSessionExpired] = useState(false);
     const navigate = useNavigate();
+
+    useEffect(() => {
+        if (localStorage.getItem('session_expired') === 'true') {
+            localStorage.removeItem('session_expired');
+            setSessionExpired(true);
+        }
+    }, []);
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!username.trim() || !password.trim()) {
+            setError('Username and password are required.');
+            return;
+        }
+        setError('');
+        setIsLoading(true);
         try {
             const params = new URLSearchParams();
             params.append('username', username);
@@ -30,6 +45,8 @@ const Login = () => {
             const errorMessage = err.response?.data?.detail || err.message || 'Login failed';
             setError(errorMessage);
             console.error(err);
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -44,6 +61,11 @@ const Login = () => {
                     <h3 className="text-sm text-center text-text-secondary mt-1 font-medium">Access your portfolio intelligence</h3>
                 </div>
 
+                {sessionExpired && (
+                    <div className="p-3 text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-xl text-center text-sm">
+                        Your session expired. Please sign in again.
+                    </div>
+                )}
                 {error && <div className="p-3 text-danger bg-danger/10 border border-danger/20 rounded-xl text-center text-sm">{error}</div>}
 
                 <form onSubmit={handleLogin} className="space-y-4">
@@ -71,9 +93,11 @@ const Login = () => {
                     </div>
                     <button
                         type="submit"
-                        className="w-full p-3 font-bold text-white bg-emerald-600 rounded-xl hover:bg-emerald-700 transition-colors shadow-lg shadow-emerald-500/20 mt-2"
+                        disabled={isLoading}
+                        className="w-full p-3 font-bold text-white bg-emerald-600 rounded-xl hover:bg-emerald-700 transition-colors shadow-lg shadow-emerald-500/20 mt-2 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                     >
-                        Sign In
+                        {isLoading && <Loader2 size={18} className="animate-spin" />}
+                        {isLoading ? 'Signing in...' : 'Sign In'}
                     </button>
                 </form>
                 <p className="text-center text-sm text-text-secondary">

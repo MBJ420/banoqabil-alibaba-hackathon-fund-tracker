@@ -1,9 +1,10 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, type ReactNode } from 'react';
 import client from '../api/client';
+import { semanticTagClass } from '../utils/tagFamily';
 import {
   Brain, RefreshCw, TrendingUp, TrendingDown, Minus,
   Globe, ChevronDown, ChevronUp, AlertCircle, Sparkles,
-  BarChart2, Clock, Zap
+  BarChart2, Clock, Zap, X, Coins, Banknote, Landmark
 } from 'lucide-react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -39,18 +40,15 @@ interface WorldContextEntry {
 
 const ASSET_ORDER = ['PSX Stocks (Equity Funds)', 'Money Market', 'Income Funds', 'Gold', 'Silver'];
 
-const ASSET_ICONS: Record<string, string> = {
-  'PSX Stocks (Equity Funds)': '📈', Gold: '🪙', Silver: '🥈',
-  'Money Market': '💵', 'Income Funds': '🏦',
+const ASSET_ICONS: Record<string, ReactNode> = {
+  'PSX Stocks (Equity Funds)': <TrendingUp size={22} className="text-emerald-400" />,
+  Gold: <Coins size={22} className="text-amber-400" />,
+  Silver: <Coins size={22} className="text-slate-300" />,
+  'Money Market': <Banknote size={22} className="text-sky-400" />,
+  'Income Funds': <Landmark size={22} className="text-indigo-400" />,
 };
 
-const CATEGORY_COLORS: Record<string, string> = {
-  'Geopolitical':   'bg-red-500/10 text-red-300 border-red-500/20',
-  'Monetary Policy':'bg-blue-500/10 text-blue-300 border-blue-500/20',
-  'Commodities':    'bg-yellow-500/10 text-yellow-300 border-yellow-500/20',
-  'Trade':          'bg-emerald-500/10 text-emerald-300 border-emerald-500/20',
-  'Other':          'bg-white/5 text-slate-300 border-white/10',
-};
+// Semantic category colors are provided by ../utils/tagFamily.
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -111,7 +109,7 @@ function timeAgo(isoStr: string | null): string {
 
 function AssetRow({ assetClass, data }: { assetClass: string; data: AssetPrediction }) {
   const [expanded, setExpanded] = useState(false);
-  const icon = ASSET_ICONS[assetClass] || '📊';
+  const icon = ASSET_ICONS[assetClass] ?? <BarChart2 size={22} className="text-text-secondary" />;
 
   const tiers = [
     { label: 'Short', key: 'short', horizon: 'Short-term (days)', value: data.short },
@@ -135,7 +133,7 @@ function AssetRow({ assetClass, data }: { assetClass: string; data: AssetPredict
         onClick={() => setExpanded(e => !e)}
         className="w-full flex items-center gap-4 p-4 text-left hover:bg-white/3 transition-colors"
       >
-        <span className="text-2xl shrink-0">{icon}</span>
+        <span className="shrink-0 flex items-center">{icon}</span>
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between gap-2 flex-wrap">
@@ -375,7 +373,7 @@ export default function AINews() {
                 ) : (
                   <div className="space-y-3">
                     {worldContext.map(entry => {
-                      const catColor = CATEGORY_COLORS[entry.category || 'Other'] || CATEGORY_COLORS['Other'];
+                      const catColor = semanticTagClass(entry.category || '');
                       return (
                         <div
                           key={entry.id}
@@ -387,7 +385,7 @@ export default function AINews() {
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 flex-wrap mb-1">
                               {entry.category && (
-                                <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${catColor}`}>
+                                <span className={catColor}>
                                   {entry.category}
                                 </span>
                               )}
@@ -420,7 +418,7 @@ export default function AINews() {
                             title="Mark as resolved"
                             className="shrink-0 p-1.5 text-text-secondary hover:text-danger hover:bg-danger/10 rounded-lg transition-all opacity-0 group-hover:opacity-100"
                           >
-                            <Zap size={13} className="rotate-45" />
+                            <X size={13} />
                           </button>
                         </div>
                       );
