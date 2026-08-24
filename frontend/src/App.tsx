@@ -7,6 +7,7 @@ import NewsPage from './pages/News';
 import AINewsPage from './pages/AINews';
 import PortfolioSuggestions from './pages/PortfolioSuggestions';
 import InflationSimulator from './pages/InflationSimulator';
+import TaxOptimizer from './pages/TaxOptimizer';
 import ErrorBoundary from './components/ErrorBoundary';
 import ToastProvider from './components/Toast';
 
@@ -29,6 +30,7 @@ function App() {
             <Route path="ai-news" element={<ErrorBoundary name="AI Analysis"><AINewsPage /></ErrorBoundary>} />
             <Route path="suggestions" element={<ErrorBoundary name="Portfolio Suggestions"><PortfolioSuggestions /></ErrorBoundary>} />
             <Route path="simulator" element={<ErrorBoundary name="Inflation Simulator"><InflationSimulator /></ErrorBoundary>} />
+            <Route path="tax" element={<ErrorBoundary name="Tax Optimizer"><TaxOptimizer /></ErrorBoundary>} />
           </Route>
         </Routes>
       </Router>
