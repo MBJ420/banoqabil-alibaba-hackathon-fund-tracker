@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 
 import client from '../api/client';
 import { useToast } from '../components/Toast';
+import { semanticTagClass } from '../utils/tagFamily';
 import {
   Newspaper, RefreshCw, ExternalLink, Clock, Tag,
   AlertCircle, Wifi, WifiOff, ChevronDown, X, Search, Pin
@@ -32,28 +33,7 @@ interface ScraperStatusUI {
   error_message: string | null;
 }
 
-const TAG_COLORS: Record<string, string> = {
-  PSX:           'bg-indigo-500/10 text-indigo-400 border-indigo-500/20',
-  Gold:          'bg-amber-500/10 text-amber-400 border-amber-500/20',
-  Silver:        'bg-slate-400/10 text-slate-300 border-slate-400/20',
-  SBP:           'bg-blue-500/10 text-blue-400 border-blue-500/20',
-  Inflation:     'bg-rose-500/10 text-rose-400 border-rose-500/20',
-  'Interest Rate': 'bg-orange-500/10 text-orange-400 border-orange-500/20',
-  IMF:           'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-  CPEC:          'bg-cyan-500/10 text-cyan-400 border-cyan-500/20',
-  Geopolitical:  'bg-red-500/10 text-red-400 border-red-500/20',
-  'Money Market':'bg-emerald-600/10 text-emerald-500 border-emerald-600/20',
-  Equity:        'bg-indigo-600/10 text-indigo-500 border-indigo-600/20',
-  Pakistan:      'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-  Rupee:         'bg-emerald-700/10 text-emerald-600 border-emerald-700/20',
-  Oil:           'bg-slate-700/10 text-slate-400 border-slate-700/20',
-  Sanctions:     'bg-red-900/10 text-red-500 border-red-900/20',
-  Forex:         'bg-sky-500/10 text-sky-400 border-sky-500/20',
-  MUFAP:         'bg-violet-500/10 text-violet-400 border-violet-500/20',
-  Commodities:   'bg-amber-600/10 text-amber-500 border-amber-600/20',
-};
-
-const DEFAULT_TAG_CLASS = 'bg-white/5 text-slate-300 border-white/10';
+// Semantic tag colors are now provided by ../utils/tagFamily.
 
 function timeAgo(isoStr: string | null): string {
   if (!isoStr) return 'Unknown date';
@@ -272,7 +252,7 @@ export default function News() {
           <div className="flex flex-wrap gap-2">
             <button
               onClick={() => setActiveTag(null)}
-              className={`px-3 py-1 rounded-full text-xs font-medium border transition-all ${activeTag === null ? 'bg-neon-purple text-white border-neon-purple' : 'bg-white/5 text-text-secondary border-white/10 hover:border-white/30'}`}
+                className={`px-2.5 py-1 rounded-full text-[11px] font-medium border transition-all ${activeTag === null ? 'bg-neon-purple text-white border-neon-purple' : 'bg-white/5 text-text-secondary border-white/10 hover:border-white/30'}`}
             >
               All
             </button>
@@ -280,7 +260,7 @@ export default function News() {
               <button
                 key={tag}
                 onClick={() => setActiveTag(activeTag === tag ? null : tag)}
-                className={`px-3 py-1 rounded-full text-xs font-medium border transition-all ${activeTag === tag ? (TAG_COLORS[tag] || DEFAULT_TAG_CLASS) + ' !opacity-100' : 'bg-white/5 text-text-secondary border-white/10 hover:border-white/30'}`}
+                className={`px-2.5 py-1 rounded-full text-[11px] font-medium border transition-all ${activeTag === tag ? semanticTagClass(tag) + ' !opacity-100' : 'bg-white/5 text-text-secondary border-white/10 hover:border-white/30'}`}
               >
                 {tag}
               </button>
@@ -391,7 +371,7 @@ export default function News() {
                         <button
                           key={tag}
                           onClick={() => setActiveTag(tag)}
-                          className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border transition-all hover:opacity-80 ${TAG_COLORS[tag] || DEFAULT_TAG_CLASS}`}
+                          className={`flex items-center gap-1 hover:opacity-80 ${semanticTagClass(tag)}`}
                         >
                           <Tag size={9} />
                           {tag}
