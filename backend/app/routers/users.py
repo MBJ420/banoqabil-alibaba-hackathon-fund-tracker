@@ -45,7 +45,7 @@ def create_user(user: schemas.UserCreate, db: Session = Depends(database.get_db)
     return new_user
 
 @router.get("/me", response_model=schemas.User)
-async def read_users_me(current_user: schemas.User = Depends(get_current_user)):
+def read_users_me(current_user: schemas.User = Depends(get_current_user)):
     return current_user
 
 @router.get("/bank-config")

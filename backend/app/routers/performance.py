@@ -16,7 +16,7 @@ router = APIRouter(
 )
 
 @router.post("/upload-fmr")
-async def upload_fmr(file: UploadFile = File(...), db: Session = Depends(get_db)):
+def upload_fmr(file: UploadFile = File(...), db: Session = Depends(get_db)):
     """
     Accepts an FMR PDF upload from the Admin/Settings UI, saves it locally,
     and processes it using the Gemini AI extractor to enrich fund metadata.
