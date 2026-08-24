@@ -1,13 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import client from '../api/client';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import ReactApexChart from 'react-apexcharts';
 import type { ApexOptions } from 'apexcharts';
 import { LogOut, LayoutDashboard, Database, TrendingUp, Zap, ArrowUpRight, ArrowDownRight, Activity, Menu, Building2, Download, FileText, Sun, Moon, Calculator, Info, Search, UploadCloud, ChevronDown, ChevronUp, Filter, Newspaper, Brain, Lightbulb } from 'lucide-react';
-import NewsPage from './News';
-import AINewsPage from './AINews';
-import PortfolioSuggestions from './PortfolioSuggestions';
 import StatementUploadModal from '../components/StatementUploadModal';
 import { useToast } from '../components/Toast';
 
@@ -87,6 +84,10 @@ const Dashboard = () => {
 
     useEffect(() => {
         const fetchData = async () => {
+            // Only fetch portfolio data while the dashboard home route is active.
+            // Subpages render via React Router <Outlet />, so we must not fire
+            // these calls (or surface their errors) when a subpage is mounted.
+            if (currentPage !== '/') return;
             try {
                 // Add a generous timeout so a slow (but alive) backend doesn't crash the dashboard
                 const timeoutPromise = new Promise((_, reject) =>
@@ -151,7 +152,7 @@ const Dashboard = () => {
             }
         };
         fetchData();
-    }, [navigate, selectedBank, timeRange, selectedPortfolio]);
+    }, [navigate, selectedBank, timeRange, selectedPortfolio, currentPage]);
 
     // Fetch bank PDF password configs on mount
     useEffect(() => {
@@ -287,7 +288,7 @@ const Dashboard = () => {
         }
     };
 
-    if (error) return (
+    if (currentPage === '/' && error) return (
         <div className="flex items-center justify-center h-screen bg-midnight text-danger">
             <div className="flex flex-col items-center gap-4 text-center">
                 <div className="p-4 bg-danger/10 rounded-full">
@@ -308,7 +309,7 @@ const Dashboard = () => {
         </div>
     );
 
-    if (!summary) return (
+    if (currentPage === '/' && !summary) return (
         <div className="flex items-center justify-center h-screen bg-midnight text-emerald-500">
             <div className="flex flex-col items-center gap-4">
                 <Activity className="w-12 h-12 animate-spin" />
@@ -351,9 +352,9 @@ const Dashboard = () => {
                         <NavItem
                             icon={<LayoutDashboard size={20} />}
                             label="Global Portfolio"
-                            active={selectedBank === null}
+                            active={selectedBank === null && currentPage === '/'}
                             isOpen={isSidebarOpen}
-                            onClick={() => setSelectedBank(null)}
+                            onClick={() => { setSelectedBank(null); navigate('/'); }}
                         />
                     </div>
 
@@ -406,13 +407,9 @@ const Dashboard = () => {
                 {/* Background Glow */}
                 <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-emerald-500/5 blur-[120px] rounded-full pointer-events-none" />
 
-                {/* News pages render directly without the portfolio header */}
-                {currentPage === '/news' && <NewsPage />}
-                {currentPage === '/ai-news' && <AINewsPage />}
-                {currentPage === '/suggestions' && <PortfolioSuggestions />}
-
-                {/* Portfolio content — only shown on '/' route */}
-                {currentPage === '/' && <>
+                {/* Portfolio content — only shown on the home ('/') route; subpages render via React Router <Outlet /> */}
+                {currentPage === '/' ? (
+                <>
 
                 {/* Header */}
                 <header className="px-8 py-6 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[var(--color-white-5)] bg-surface/50 backdrop-blur-xl sticky top-0 z-10">
@@ -1317,7 +1314,9 @@ const Dashboard = () => {
                     </div>
                 )}
             </>
-            }
+                ) : (
+                    <Outlet />
+                )}
             </main>
         </div>
     );
