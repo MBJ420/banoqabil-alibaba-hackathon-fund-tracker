@@ -1,8 +1,38 @@
 import { useEffect, useState } from 'react';
 import client from '../api/client';
 import { 
-  ShieldCheck, AlertTriangle, AlertCircle, Info, TrendingUp, Lightbulb, Zap 
+  ShieldCheck, AlertTriangle, AlertCircle, Info, TrendingUp, Lightbulb, Zap, HelpCircle 
 } from 'lucide-react';
+import FeatureInfoModal, { type FeatureGuideContent } from '../components/FeatureInfoModal';
+
+const SUGGESTIONS_GUIDE: FeatureGuideContent = {
+  title: 'Portfolio Health & Suggestions',
+  subtitle: 'Algorithmic risk diagnostics and peer fund comparison across Pakistan mutual funds',
+  badge: 'Rule Engine & Scoring',
+  overview: 'This module analyzes your overall mutual fund portfolio health, checks for dangerous asset concentration, and algorithmically scans 185+ live funds from MUFAP to identify top-performing peer funds that could replace underperforming holdings.',
+  howToUse: [
+    'Review your Overall Health Status badge (Optimal, Moderate, or Action Required).',
+    'Read Health Diagnostic Alerts: Identifies over-exposure to single banks, high cash drag, or lack of Shariah compliance.',
+    'Inspect "Top Outperforming Peer Funds": Compares your currently held funds against top-ranked peer funds in the same category over 1M, 6M, and 1Y periods.'
+  ],
+  mathExplanation: [
+    {
+      formulaName: 'Composite Performance Scoring',
+      formula: 'Score = (0.20 × R_1m) + (0.30 × R_6m) + (0.50 × R_1y)',
+      description: 'Weights long-term 1-year returns highest (50%) to prevent short-term market noise from distorting fund quality.'
+    },
+    {
+      formulaName: 'Outperformance Gap',
+      formula: 'Gap = Peer_Score - User_Fund_Score',
+      description: 'Calculates the exact percentage alpha you could gain by reallocating to the category leader.'
+    }
+  ],
+  proTips: [
+    'Diversification Rule: No single asset management company (AMC) should hold more than 50% of your total net worth.',
+    'Review performance consistency across all three timeframes (1M, 6M, 1Y) before switching funds.'
+  ],
+  disclaimer: 'Suggestions are generated algorithmically based on historical MUFAP returns and do not constitute certified investment advisory.'
+};
 
 interface HealthAlert {
   id: string;
@@ -61,6 +91,7 @@ const SEVERITY_ICONS = {
 };
 
 export default function PortfolioSuggestions() {
+  const [isInfoOpen, setIsInfoOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [healthData, setHealthData] = useState<HealthCheckResponse | null>(null);
   const [outperformersData, setOutperformersData] = useState<OutperformersResponse | null>(null);
@@ -89,17 +120,32 @@ export default function PortfolioSuggestions() {
 
   return (
     <div className="flex-1 overflow-y-auto custom-scrollbar p-6 md:p-8">
+      <FeatureInfoModal
+        isOpen={isInfoOpen}
+        onClose={() => setIsInfoOpen(false)}
+        content={SUGGESTIONS_GUIDE}
+      />
       <div className="max-w-5xl mx-auto space-y-8">
         
         {/* Header */}
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-            <Lightbulb className="text-neon-purple" size={26} />
-            Portfolio Suggestions
-          </h2>
-          <p className="text-text-secondary text-sm mt-1">
-            Rule-based health checks and performance comparisons based on your latest statements.
-          </p>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
+              <Lightbulb className="text-emerald-400" size={26} />
+              Portfolio Suggestions
+            </h2>
+            <p className="text-text-secondary text-sm mt-1">
+              Rule-based health checks and performance comparisons based on your latest statements.
+            </p>
+          </div>
+          <button
+            onClick={() => setIsInfoOpen(true)}
+            className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-surface border border-[var(--color-white-10)] hover:border-emerald-500/50 text-xs font-semibold text-text-secondary hover:text-emerald-400 transition-all shadow-sm self-start sm:self-auto shrink-0"
+            title="Learn how this feature works"
+          >
+            <HelpCircle size={15} className="text-emerald-400" />
+            <span>How it Works & Guide</span>
+          </button>
         </div>
 
         {error && (

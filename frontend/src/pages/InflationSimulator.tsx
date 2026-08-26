@@ -1,7 +1,43 @@
 import { useEffect, useState } from 'react';
 import client from '../api/client';
-import { PiggyBank, TrendingUp, ShieldCheck, Target, Info } from 'lucide-react';
+import { PiggyBank, TrendingUp, ShieldCheck, Target, Info, HelpCircle } from 'lucide-react';
 import { useToast } from '../components/Toast';
+import FeatureInfoModal, { type FeatureGuideContent } from '../components/FeatureInfoModal';
+
+const INFLATION_GUIDE: FeatureGuideContent = {
+  title: 'Inflation & SIP Simulator',
+  subtitle: 'Understanding real purchasing power and systematic wealth accumulation in Pakistan',
+  badge: 'SBP CPI & Annuity Model',
+  overview: 'This simulator shows whether your mutual fund returns are truly growing your real wealth or being eaten up by inflation (CPI). It also models how a disciplined Systematic Investment Plan (SIP) helps you accumulate wealth for milestones like Hajj, Child Higher Education, or Retirement.',
+  howToUse: [
+    'Check your Expected Annual Return (%) — it auto-loads from your real portfolio ROI, or you can test other values.',
+    'Review the Inflation Assumption (%) — pre-calibrated to SBP 5-year average (~16.5%). Adjust it to model high or low inflation.',
+    'Drag the Time Horizon slider to see your projected Nominal Wealth vs Real Purchasing Power.',
+    'Under "Systematic Investment Plan", choose a goal (Hajj, Child Education, Retirement) and set your Monthly Contribution (PKR).'
+  ],
+  mathExplanation: [
+    {
+      formulaName: 'Compound Lump Sum (Nominal Growth)',
+      formula: 'FV = PV × (1 + r)^t',
+      description: 'Calculates how your current investment capital (PV) grows over t years at annual return rate (r).'
+    },
+    {
+      formulaName: 'SIP Monthly Compounding (Future Value Annuity)',
+      formula: 'FV_SIP = Monthly_Deposit × [ ((1 + r/12)^n - 1) / (r/12) ]',
+      description: 'Calculates accumulated wealth from investing a fixed amount every month over n months.'
+    },
+    {
+      formulaName: 'Fisher Principle (Real Purchasing Power)',
+      formula: 'Real_Value = Nominal_FV / (1 + Inflation_Rate)^t',
+      description: 'Deflates future paper money by cumulative inflation so you know its true purchasing power in today\'s prices.'
+    }
+  ],
+  proTips: [
+    'Beware of the "Money Illusion": A 15% return feels positive, but if inflation is 20%, you are actually losing 5% purchasing power per year.',
+    'Islamic Equity & Balanced funds historically outpace inflation over 5+ year horizons compared to holding cash in bank deposits.'
+  ],
+  disclaimer: 'Calculations are for educational and simulation purposes based on mathematical annuity formulas and SBP historical averages. Real market returns fluctuate over time.'
+};
 
 // Representative State Bank of Pakistan CPI history (annual %, illustrative
 // averages). Real SBP figures vary by source; these convey the ordering of
@@ -103,6 +139,7 @@ const Stat = ({
 export default function InflationSimulator() {
   const { toast } = useToast();
 
+  const [isInfoOpen, setIsInfoOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [currentValue, setCurrentValue] = useState(500_000);
   const [expReturn, setExpReturn] = useState(12);
@@ -149,23 +186,39 @@ export default function InflationSimulator() {
 
   return (
     <div className="h-full overflow-y-auto custom-scrollbar">
+      <FeatureInfoModal
+        isOpen={isInfoOpen}
+        onClose={() => setIsInfoOpen(false)}
+        content={INFLATION_GUIDE}
+      />
       <div className="p-8 max-w-5xl mx-auto space-y-8">
         <div>
-          <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center shadow-amber-500/20">
-              <PiggyBank className="text-white w-5 h-5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-2xl font-bold tracking-tight text-text-primary">Inflation Hedge & SIP Simulator</h2>
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-sky-500/10 text-sky-400 border border-sky-500/20">
-                  SBP CPI Model • Simulation
-                </span>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center shadow-amber-500/20 shrink-0">
+                <PiggyBank className="text-white w-5 h-5" />
               </div>
-              <p className="text-sm text-text-secondary">
-                See whether your investments preserve purchasing power and plan disciplined wealth building.
-              </p>
+              <div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <h2 className="text-2xl font-bold tracking-tight text-text-primary">Inflation Hedge & SIP Simulator</h2>
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-sky-500/10 text-sky-400 border border-sky-500/20">
+                    SBP CPI Model • Simulation
+                  </span>
+                </div>
+                <p className="text-sm text-text-secondary">
+                  See whether your investments preserve purchasing power and plan disciplined wealth building.
+                </p>
+              </div>
             </div>
+
+            <button
+              onClick={() => setIsInfoOpen(true)}
+              className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-surface border border-[var(--color-white-10)] hover:border-emerald-500/50 text-xs font-semibold text-text-secondary hover:text-emerald-400 transition-all shadow-sm shrink-0"
+              title="Learn how this feature works"
+            >
+              <HelpCircle size={15} className="text-emerald-400" />
+              <span>How it Works & Guide</span>
+            </button>
           </div>
         </div>
 

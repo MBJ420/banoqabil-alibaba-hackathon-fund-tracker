@@ -4,9 +4,41 @@ import client from '../api/client';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import ReactApexChart from 'react-apexcharts';
 import type { ApexOptions } from 'apexcharts';
-import { LogOut, LayoutDashboard, Database, TrendingUp, Zap, ArrowUpRight, Activity, Menu, Building2, Download, FileText, Sun, Moon, Calculator, Info, Search, UploadCloud, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Filter, Newspaper, Brain, Lightbulb, X, Eye, EyeOff, PiggyBank, Receipt, LineChart } from 'lucide-react';
+import { LogOut, LayoutDashboard, Database, TrendingUp, Zap, ArrowUpRight, Activity, Menu, Building2, Download, FileText, Sun, Moon, Calculator, Info, Search, UploadCloud, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Filter, Newspaper, Brain, Lightbulb, X, Eye, EyeOff, PiggyBank, Receipt, LineChart, HelpCircle } from 'lucide-react';
 import StatementUploadModal from '../components/StatementUploadModal';
 import { useToast } from '../components/Toast';
+import FeatureInfoModal, { type FeatureGuideContent } from '../components/FeatureInfoModal';
+
+const DASHBOARD_GUIDE: FeatureGuideContent = {
+  title: 'Global Portfolio Dashboard',
+  subtitle: 'Unified wealth tracker for Pakistani mutual funds with live MUFAP valuation',
+  badge: 'Live Valuation Engine',
+  overview: 'FundTracker consolidates your mutual fund accounts across Meezan Bank, HBL Asset Management, Atlas Funds, and Faysal Funds into a single offline-first terminal. It reads your monthly PDF statements and recalculates your net worth daily using live NAVs from MUFAP.',
+  howToUse: [
+    'Upload your bank statements using the "Upload Statement" button to auto-extract your units and fund holdings.',
+    'View your total Net Worth, Invested Capital, and Gain/Loss in Pakistani Rupee (PKR) and Lakhs / Crores notation.',
+    'Use the institution filter on the left sidebar to drill down into Meezan, HBL, Atlas, or Faysal specifically.',
+    'Click "Zakat Calc" to calculate your Shariah-compliant wealth purification liability.',
+    'Export official PDF or CSV reports anytime for wealth filing.'
+  ],
+  mathExplanation: [
+    {
+      formulaName: 'Live Net Worth Valuation',
+      formula: 'Current_Value = Total_Units_Held × Live_MUFAP_NAV',
+      description: 'Your real-time net worth updates every afternoon when MUFAP publishes official daily NAV prices.'
+    },
+    {
+      formulaName: 'Absolute Profit & Return on Investment (ROI)',
+      formula: 'ROI (%) = ((Total_Net_Worth - Total_Invested) / Total_Invested) × 100',
+      description: 'The net percentage return across all your active mutual fund portfolios.'
+    }
+  ],
+  proTips: [
+    'Offline First Privacy: Your financial data never leaves your computer; all parsing and database storage runs locally in SQLite.',
+    'Keep your statements updated monthly so the historical trend line accurately reflects your reinvested dividends.'
+  ],
+  disclaimer: 'NAV data is scraped daily from MUFAP.com.pk. Ensure statements uploaded are genuine digital bank copies.'
+};
 
 const formatCurrency = (amount: number | null | undefined): string => {
     if (amount === null || amount === undefined || isNaN(amount)) return '0.00';
@@ -68,6 +100,7 @@ const Dashboard = () => {
     });
 
     const [isCalculatorModalOpen, setIsCalculatorModalOpen] = useState(false);
+    const [isDashboardInfoOpen, setIsDashboardInfoOpen] = useState(false);
     const [statements, setStatements] = useState<any[]>([]);
     const [isStatementHistoryModalOpen, setIsStatementHistoryModalOpen] = useState(false);
 
@@ -481,7 +514,15 @@ const Dashboard = () => {
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
+                        <button
+                            onClick={() => setIsDashboardInfoOpen(true)}
+                            className="flex items-center gap-1.5 px-3 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-lg text-xs font-semibold transition-all shadow-sm"
+                            title="Platform guide & how it works"
+                        >
+                            <HelpCircle size={15} />
+                            <span>Guide</span>
+                        </button>
                         <HeaderButton
                             onClick={() => setIsCalculatorModalOpen(true)}
                             icon={<Calculator size={16} />}
@@ -523,6 +564,12 @@ const Dashboard = () => {
                         />
                     </div>
                 </header>
+
+                <FeatureInfoModal
+                    isOpen={isDashboardInfoOpen}
+                    onClose={() => setIsDashboardInfoOpen(false)}
+                    content={DASHBOARD_GUIDE}
+                />
 
                 <StatementUploadModal isOpen={isStatementModalOpen} onClose={() => setIsStatementModalOpen(false)} />
 

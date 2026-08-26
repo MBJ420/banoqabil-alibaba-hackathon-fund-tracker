@@ -1,7 +1,44 @@
 import { useEffect, useState } from 'react';
 import client from '../api/client';
-import { Receipt, TrendingUp, Landmark, Download, Info } from 'lucide-react';
+import { Receipt, TrendingUp, Landmark, Download, Info, HelpCircle } from 'lucide-react';
 import { useToast } from '../components/Toast';
+import FeatureInfoModal, { type FeatureGuideContent } from '../components/FeatureInfoModal';
+
+const TAX_GUIDE: FeatureGuideContent = {
+  title: 'Capital Gains & Tax Optimizer',
+  subtitle: 'FBR Section 37A Capital Gains Tax & Section 63 VPS Pension Tax Rebates in Pakistan',
+  badge: 'FBR Tax Law Model',
+  overview: 'This optimizer estimates your Pakistan Federal Board of Revenue (FBR) capital gains tax liability on mutual fund redemptions, reveals the tax-saving power of holding funds beyond 12 months, and calculates your Section 63 tax rebate when investing in Voluntary Pension Schemes (VPS).',
+  howToUse: [
+    'Toggle your Taxpayer Status (Active Filer vs Non-Filer) — Non-Filers incur a 100% tax surcharge (30% vs 15%).',
+    'Review Realized Gains: Add or edit redeemed fund transactions with Cost Price, Sale Price, and Holding Period (months).',
+    'Review Unrealized Holdings: Shows what you would owe if you liquidated today, and warns you if holding a few more weeks eliminates your tax.',
+    'Enter your Annual Taxable Income & VPS Contribution to see your instant Section 63 direct tax rebate.',
+    'Click "Download FBR Annexure" to export an organized text report of your calculations.'
+  ],
+  mathExplanation: [
+    {
+      formulaName: 'Section 37A Capital Gains Tax (Holding Period Tiering)',
+      formula: 'CGT = (Months >= 12) ? 0% : (IsFiler ? Gain × 15% : Gain × 30%)',
+      description: 'Under Pakistan tax law, long-term capital gains on listed securities held for 12 months or longer are exempt from CGT.'
+    },
+    {
+      formulaName: 'Section 63 Voluntary Pension Scheme (VPS) Tax Credit',
+      formula: 'VPS_Credit = Min(20% × Contribution, 20% × Taxable_Income, PKR 200,000)',
+      description: 'A direct credit against your total tax liability for investing in SECP-registered pension funds (e.g. Meezan Tahaffuz Pension Fund).'
+    },
+    {
+      formulaName: 'Net Effective Tax Payable',
+      formula: 'Net_Tax = Max(0, Realized_CGT - VPS_Rebate)',
+      description: 'Your final capital gains tax liability after subtracting your claimable VPS pension rebate.'
+    }
+  ],
+  proTips: [
+    'Tax Timing Optimization: If you have held a mutual fund for 10 or 11 months with large profits, waiting just 1–2 months to cross the 12-month mark saves you 15% to 30% in taxes completely legally!',
+    'Active Filer status is essential: Non-filers pay double the tax rate on mutual fund gains and dividend distributions.'
+  ],
+  disclaimer: 'Tax calculations are for estimation and planning purposes per FBR Section 37A and 63. Real tax deductions depend on Asset Management Company withholding tax (WHT) certificates and your annual wealth statement filing.'
+};
 
 // Illustrative Pakistan CGT model (Income Tax Ordinance, Section 37A).
 // Listed-security long-term gains (>12 months) are exempt; short-term gains
@@ -67,6 +104,7 @@ let rowSeq = 1;
 export default function TaxOptimizer() {
   const { toast } = useToast();
 
+  const [isInfoOpen, setIsInfoOpen] = useState(false);
   const [isFiler, setIsFiler] = useState(true);
   const [rows, setRows] = useState<Row[]>([{ id: rowSeq++, name: 'Equity Fund Sale', cost: 100_000, value: 140_000, months: 8 }]);
 
@@ -139,22 +177,38 @@ export default function TaxOptimizer() {
 
   return (
     <div className="h-full overflow-y-auto custom-scrollbar">
+      <FeatureInfoModal
+        isOpen={isInfoOpen}
+        onClose={() => setIsInfoOpen(false)}
+        content={TAX_GUIDE}
+      />
       <div className="p-8 max-w-5xl mx-auto space-y-8">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-600 to-emerald-800 flex items-center justify-center shadow-emerald-500/20">
-            <Receipt className="text-white w-5 h-5" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-2xl font-bold tracking-tight text-text-primary">Capital Gains & Tax Optimizer</h2>
-              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                FBR Sec 37A/63 Model • Simulation
-              </span>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-600 to-emerald-800 flex items-center justify-center shadow-emerald-500/20 shrink-0">
+              <Receipt className="text-white w-5 h-5" />
             </div>
-            <p className="text-sm text-text-secondary">
-              Model Pakistan CGT by holding period and filer status, and quantify VPS tax rebates.
-            </p>
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 className="text-2xl font-bold tracking-tight text-text-primary">Capital Gains & Tax Optimizer</h2>
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                  FBR Sec 37A/63 Model • Simulation
+                </span>
+              </div>
+              <p className="text-sm text-text-secondary">
+                Model Pakistan CGT by holding period and filer status, and quantify VPS tax rebates.
+              </p>
+            </div>
           </div>
+
+          <button
+            onClick={() => setIsInfoOpen(true)}
+            className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-surface border border-[var(--color-white-10)] hover:border-emerald-500/50 text-xs font-semibold text-text-secondary hover:text-emerald-400 transition-all shadow-sm shrink-0"
+            title="Learn how this feature works"
+          >
+            <HelpCircle size={15} className="text-emerald-400" />
+            <span>How it Works & Guide</span>
+          </button>
         </div>
 
         {/* Filer status */}

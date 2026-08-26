@@ -4,8 +4,39 @@ import { semanticTagClass } from '../utils/tagFamily';
 import {
   Brain, RefreshCw, TrendingUp, TrendingDown, Minus,
   Globe, ChevronDown, ChevronUp, AlertCircle, Sparkles,
-  BarChart2, Clock, Zap, X, Coins, Banknote, Landmark
+  BarChart2, Clock, Zap, X, Coins, Banknote, Landmark, HelpCircle
 } from 'lucide-react';
+import FeatureInfoModal, { type FeatureGuideContent } from '../components/FeatureInfoModal';
+
+const AI_NEWS_GUIDE: FeatureGuideContent = {
+  title: 'AI Market Intelligence',
+  subtitle: 'How Gemini AI extracts macro insights from Dawn & Business Recorder for mutual fund categories',
+  badge: 'Gemini AI Macro Pipeline',
+  overview: 'This intelligence module scans real-time Pakistani financial news, identifies macro catalysts (State Bank policy rates, IMF tranche approvals, commodity price shifts), and uses a 2-pass AI pipeline to predict directional impacts across Equity, Income, Money Market, and Gold mutual funds.',
+  howToUse: [
+    'View Short-Term (1-3 weeks), Medium-Term (1-3 months), and Long-Term (6-12 months) sentiment pills.',
+    'Click on any asset card (e.g. PSX Stocks or Gold) to expand Gemini\'s detailed reasoning.',
+    'Check "Active Market Drivers" at the bottom to see specific macro catalysts currently pinned by AI.',
+    'Click "Refresh Analysis" to trigger a live re-analysis of today\'s breaking headlines.'
+  ],
+  mathExplanation: [
+    {
+      formulaName: 'Sentiment Scoring & Normalization',
+      formula: 'Impact_Score ∈ [-1.0 (Strongly Bearish), 0.0 (Neutral), +1.0 (Strongly Bullish)]',
+      description: 'Scores quantify directional conviction across asset classes based on macro monetary policy.'
+    },
+    {
+      formulaName: 'Time-Horizon Decay Weights',
+      formula: 'Aggregate_Impact = (w_short × S) + (w_med × M) + (w_long × L)',
+      description: 'Differentiates transient noise (e.g. daily rupee fluctuation) from structural macroeconomic shifts.'
+    }
+  ],
+  proTips: [
+    'Interest Rate Inversion: When the State Bank cuts policy rates, Equity funds typically surge while Money Market yields drop.',
+    'Use AI insights as macro situational awareness, not instant buy/sell signals.'
+  ],
+  disclaimer: 'AI sentiment predictions are generated probabilistically using Large Language Models and do not constitute financial advice or guaranteed market performance.'
+};
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -186,6 +217,7 @@ function AssetRow({ assetClass, data }: { assetClass: string; data: AssetPredict
 // ─── Main Page Component ──────────────────────────────────────────────────────
 
 export default function AINews() {
+  const [isInfoOpen, setIsInfoOpen] = useState(false);
   const [predictions, setPredictions] = useState<PredictionResponse | null>(null);
   const [worldContext, setWorldContext] = useState<WorldContextEntry[]>([]);
   const [status, setStatus] = useState<any>(null);
@@ -205,17 +237,14 @@ export default function AINews() {
       setStatus(statusRes.data);
     } catch (e) {
       console.error('Failed to fetch AI news data', e);
+    } finally {
+      setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    const init = async () => {
-      setLoading(true);
-      await fetchAll();
-      setLoading(false);
-    };
-    init();
-  }, []);
+    fetchAll();
+  }, [fetchAll]);
 
   // Poll status when refreshing
   useEffect(() => {
@@ -234,10 +263,13 @@ export default function AINews() {
   }, [refreshing]);
 
   const handleRefresh = async () => {
-    if (refreshing) return;
     setRefreshing(true);
-    try { await client.post('/news/refresh-ai'); }
-    catch (e) { setRefreshing(false); }
+    try {
+      await client.post('/news/refresh-ai');
+    } catch (e) { 
+      setRefreshing(false);
+      console.error('Failed to refresh news', e);
+    }
   };
 
   const handleDeactivateContext = async (id: number) => {
@@ -251,6 +283,11 @@ export default function AINews() {
 
   return (
     <div className="flex-1 overflow-y-auto custom-scrollbar p-6 md:p-8">
+      <FeatureInfoModal
+        isOpen={isInfoOpen}
+        onClose={() => setIsInfoOpen(false)}
+        content={AI_NEWS_GUIDE}
+      />
       <div className="max-w-5xl mx-auto space-y-6">
 
         {/* Header */}
@@ -264,15 +301,25 @@ export default function AINews() {
               Powered by Gemini AI · {predictions?.generated_at ? `Analyzed ${timeAgo(predictions.generated_at)}` : 'No analysis yet'}
             </p>
           </div>
-          <button
-            id="ai-news-refresh-btn"
-            onClick={handleRefresh}
-            disabled={refreshing}
-            className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-medium transition-all disabled:opacity-50 shadow-sm"
-          >
-            <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
-            {refreshing ? 'Analyzing…' : 'Refresh Analysis'}
-          </button>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={() => setIsInfoOpen(true)}
+              className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-surface border border-[var(--color-white-10)] hover:border-emerald-500/50 text-xs font-semibold text-text-secondary hover:text-emerald-400 transition-all shadow-sm"
+              title="Learn how this feature works"
+            >
+              <HelpCircle size={15} className="text-emerald-400" />
+              <span>How it Works</span>
+            </button>
+            <button
+              id="ai-news-refresh-btn"
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-medium transition-all disabled:opacity-50 shadow-sm"
+            >
+              <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
+              {refreshing ? 'Analyzing…' : 'Refresh Analysis'}
+            </button>
+          </div>
         </div>
 
         {/* Refreshing banner */}
