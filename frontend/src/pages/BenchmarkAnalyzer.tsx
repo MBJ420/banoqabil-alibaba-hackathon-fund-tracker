@@ -86,7 +86,12 @@ export default function BenchmarkAnalyzer() {
             <LineChart className="text-white w-5 h-5" />
           </div>
           <div>
-            <h2 className="text-2xl font-bold tracking-tight text-text-primary">Benchmark Alpha & Fee Analyzer</h2>
+            <div className="flex items-center gap-2">
+              <h2 className="text-2xl font-bold tracking-tight text-text-primary">Benchmark Alpha & Fee Analyzer</h2>
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                KSE-100 Baseline • Simulation
+              </span>
+            </div>
             <p className="text-sm text-text-secondary">Compare your fund's returns against KSE-100 / KMI-30 and quantify fee drag.</p>
           </div>
         </div>

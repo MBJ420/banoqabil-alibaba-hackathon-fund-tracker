@@ -156,7 +156,12 @@ export default function InflationSimulator() {
               <PiggyBank className="text-white w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold tracking-tight text-text-primary">Inflation Hedge & SIP Simulator</h2>
+              <div className="flex items-center gap-2">
+                <h2 className="text-2xl font-bold tracking-tight text-text-primary">Inflation Hedge & SIP Simulator</h2>
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-sky-500/10 text-sky-400 border border-sky-500/20">
+                  SBP CPI Model • Simulation
+                </span>
+              </div>
               <p className="text-sm text-text-secondary">
                 See whether your investments preserve purchasing power and plan disciplined wealth building.
               </p>

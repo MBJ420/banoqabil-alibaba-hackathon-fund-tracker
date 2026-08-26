@@ -145,7 +145,12 @@ export default function TaxOptimizer() {
             <Receipt className="text-white w-5 h-5" />
           </div>
           <div>
-            <h2 className="text-2xl font-bold tracking-tight text-text-primary">Capital Gains & Tax Optimizer</h2>
+            <div className="flex items-center gap-2">
+              <h2 className="text-2xl font-bold tracking-tight text-text-primary">Capital Gains & Tax Optimizer</h2>
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                FBR Sec 37A/63 Model • Simulation
+              </span>
+            </div>
             <p className="text-sm text-text-secondary">
               Model Pakistan CGT by holding period and filer status, and quantify VPS tax rebates.
             </p>
