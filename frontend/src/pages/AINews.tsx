@@ -53,9 +53,18 @@ interface AssetPrediction {
   reasoning: string;
 }
 
+interface AIProviderInfo {
+  provider: string;
+  model: string;
+  is_alibaba_cloud: boolean;
+  engine: string;
+  status: string;
+}
+
 interface PredictionResponse {
   generated_at: string | null;
   predictions: Record<string, AssetPrediction>;
+  ai_provider?: AIProviderInfo;
 }
 
 interface WorldContextEntry {
@@ -293,12 +302,20 @@ export default function AINews() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-              <Brain className="text-emerald-500" size={26} />
-              AI Market Analysis
-            </h2>
+            <div className="flex items-center gap-3 flex-wrap">
+              <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
+                <Brain className="text-emerald-500" size={26} />
+                AI Market Analysis
+              </h2>
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-orange-500/10 text-orange-400 border border-orange-500/30 flex items-center gap-1">
+                <Sparkles size={11} />
+                {predictions?.ai_provider?.is_alibaba_cloud
+                  ? `Alibaba Cloud Model Studio (${predictions.ai_provider.model})`
+                  : 'Alibaba Cloud Qwen 2.5 / Gemini'}
+              </span>
+            </div>
             <p className="text-text-secondary text-sm mt-1">
-              Powered by Gemini AI · {predictions?.generated_at ? `Analyzed ${timeAgo(predictions.generated_at)}` : 'No analysis yet'}
+              Powered by {predictions?.ai_provider?.provider || 'Alibaba Cloud Qwen 2.5'} · {predictions?.generated_at ? `Analyzed ${timeAgo(predictions.generated_at)}` : 'No analysis yet'}
             </p>
           </div>
           <div className="flex items-center gap-2 shrink-0">
@@ -326,7 +343,7 @@ export default function AINews() {
         {refreshing && (
           <div className="flex items-center gap-3 px-4 py-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-emerald-500 text-sm">
             <Sparkles size={16} className="shrink-0 animate-pulse" />
-            <span>Gemini is analyzing today's news. Running 2-pass AI pipeline… This takes 30–60 seconds.</span>
+            <span>Alibaba Cloud Qwen 2.5 is analyzing today's news. Running 2-pass AI pipeline… This takes 15–30 seconds.</span>
           </div>
         )}
 

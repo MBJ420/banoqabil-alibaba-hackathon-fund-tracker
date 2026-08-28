@@ -21,7 +21,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import NewsArticle, AssetPrediction, WorldContextEntry, NewsMetadata, ScraperStatus
 from app.services.news_service import run_news_pipeline, run_ai_pipeline
-import google.generativeai as genai
+from app.services.llm_service import generate_json, get_active_ai_provider
 import os
 import json
 
@@ -152,7 +152,16 @@ def get_news_predictions(db: Session = Depends(get_db)):
     return {
         "generated_at": _format_dt(latest_time),
         "predictions":  result,
+        "ai_provider":  get_active_ai_provider(),
     }
+
+
+# ─── GET /news/provider ───────────────────────────────────────────────────────
+
+@router.get("/provider")
+def get_ai_provider_info():
+    """Returns active AI provider details (Alibaba Cloud Model Studio / Gemini)."""
+    return get_active_ai_provider()
 
 
 # ─── GET /news/context ────────────────────────────────────────────────────────
@@ -247,14 +256,14 @@ def deactivate_context_entry(entry_id: int, db: Session = Depends(get_db)):
 @router.post("/context/pin/{article_id}")
 def pin_article_to_context(article_id: int, db: Session = Depends(get_db)):
     """User-Curated Context: Force an article into the World Context using Gemini."""
-    if not os.environ.get("GEMINI_API_KEY"):
-        raise HTTPException(status_code=500, detail="Gemini API Key missing.")
+    provider = get_active_ai_provider()
+    if provider["status"] == "missing_keys":
+        raise HTTPException(status_code=500, detail="AI API Key (DASHSCOPE_API_KEY or GEMINI_API_KEY) missing.")
 
     article = db.query(NewsArticle).filter(NewsArticle.id == article_id).first()
     if not article:
         raise HTTPException(status_code=404, detail="Article not found.")
 
-    model = genai.GenerativeModel("gemini-2.5-flash")
     prompt = f"""
     You are extracting a permanent "World Context" fact from this specific pinned article.
     TITLE: {article.title}
@@ -270,13 +279,7 @@ def pin_article_to_context(article_id: int, db: Session = Depends(get_db)):
     }}
     """
     try:
-        response = model.generate_content(prompt)
-        text = response.text.strip()
-        if text.startswith("```json"): text = text[7:]
-        elif text.startswith("```"): text = text[3:]
-        if text.endswith("```"): text = text[:-3]
-        
-        data = json.loads(text.strip())
+        data = generate_json(prompt, temperature=0.2)
         
         wce = WorldContextEntry(
             fact=data.get("fact", article.title),

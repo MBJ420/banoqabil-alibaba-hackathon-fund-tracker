@@ -19,16 +19,14 @@ import json
 import time
 import logging
 from datetime import datetime
-import google.generativeai as genai
 from sqlalchemy.orm import Session
 from dotenv import load_dotenv
 
 from app.models import AssetPrediction, WorldContextEntry, NewsArticle
+from app.services.llm_service import generate_json, get_active_ai_provider
 
 load_dotenv()
 logger = logging.getLogger(__name__)
-
-genai.configure(api_key=os.environ.get("GEMINI_API_KEY", ""))
 
 ASSET_CLASSES = ["Money Market", "Income Funds", "Gold", "Silver", "PSX Stocks (Equity Funds)"]
 
@@ -71,9 +69,9 @@ def _clean_json(text: str) -> str:
 
 # ─── Pass 1: World Context Manager ────────────────────────────────────────────
 
-def _run_world_context_pass(db: Session, articles: list, model) -> None:
+def _run_world_context_pass(db: Session, articles: list) -> None:
     """
-    Ask Gemini to review existing PWC entries + new articles.
+    Review existing PWC entries + new articles using Alibaba Cloud Qwen 2.5 / Gemini.
     Returns update instructions and applies them to WorldContextEntry table.
     """
     active_entries = db.query(WorldContextEntry).filter(WorldContextEntry.is_active == True).all()
@@ -126,11 +124,7 @@ Return ONLY a valid JSON object in this exact format (no markdown, no extra text
 }}"""
 
     try:
-        response = model.generate_content(
-            prompt,
-            generation_config=genai.types.GenerationConfig(temperature=0.2)
-        )
-        data = json.loads(_clean_json(response.text))
+        data = generate_json(prompt, temperature=0.2)
 
         # Apply updates
         for upd in data.get("updates", []):
@@ -169,9 +163,9 @@ Return ONLY a valid JSON object in this exact format (no markdown, no extra text
 
 # ─── Pass 2: Asset Impact Analysis ────────────────────────────────────────────
 
-def _run_asset_analysis_pass(db: Session, articles: list, te_summaries: list[str], model) -> None:
+def _run_asset_analysis_pass(db: Session, articles: list, te_summaries: list[str]) -> None:
     """
-    Ask Gemini to rate the impact of current news on each asset class.
+    Rate the impact of current news on each asset class using Alibaba Cloud Qwen 2.5 / Gemini.
     Stores results in the AssetPrediction table (overwrites previous batch).
     """
     active_context = db.query(WorldContextEntry).filter(WorldContextEntry.is_active == True).all()
@@ -216,14 +210,7 @@ Return ONLY a valid JSON object (no markdown, no extra text):
 CRITICAL: You MUST include ALL {len(ASSET_CLASSES)} asset classes exactly as named here: {asset_list_str}. Do not omit any asset class from the final JSON."""
 
     try:
-        response = model.generate_content(
-            prompt,
-            generation_config=genai.types.GenerationConfig(
-                temperature=0.3,
-                response_mime_type="application/json"
-            )
-        )
-        data = json.loads(response.text)
+        data = generate_json(prompt, temperature=0.3)
 
         # Overwrite previous predictions
         db.query(AssetPrediction).delete()
@@ -262,31 +249,34 @@ CRITICAL: You MUST include ALL {len(ASSET_CLASSES)} asset classes exactly as nam
 
 # ─── Public Entry Point ────────────────────────────────────────────────────────
 
-def run_gemini_analysis(db: Session, articles: list, te_summaries: list[str]) -> None:
+def run_ai_analysis(db: Session, articles: list, te_summaries: list[str]) -> None:
     """
-    Runs both Gemini passes sequentially:
+    Runs both AI passes sequentially using Alibaba Cloud Qwen 2.5 / Gemini:
     Pass 1 → World Context Manager
     Pass 2 → Asset Impact Analysis
     """
-    if not os.environ.get("GEMINI_API_KEY"):
-        logger.error("GEMINI_API_KEY not set — skipping Gemini analysis.")
+    provider_info = get_active_ai_provider()
+    if provider_info["status"] == "missing_keys":
+        logger.error("Neither DASHSCOPE_API_KEY nor GEMINI_API_KEY is set — skipping AI analysis.")
         return
 
     if not articles:
-        logger.info("No articles to analyze — skipping Gemini.")
+        logger.info("No articles to analyze — skipping AI analysis.")
         return
 
-    logger.info(f"Starting Gemini analysis on {len(articles)} articles...")
+    logger.info(f"Starting AI analysis on {len(articles)} articles using {provider_info['provider']} ({provider_info['model']})...")
 
-    model = genai.GenerativeModel(model_name="gemini-flash-latest")
+    # Pass max 15 articles to World Context to prevent token limits
+    _run_world_context_pass(db, articles[:15])
 
-    # Pass max 15 articles to World Context to prevent API hangs
-    _run_world_context_pass(db, articles[:15], model)
+    # Brief pause to respect API pacing
+    time.sleep(2)
 
-    # To avoid '429 ResourceExhausted' tokens-per-minute limits on the free tier, pause briefly
-    logger.info("Pausing 15 seconds to respect Gemini API rate limits...")
-    time.sleep(15)
+    _run_asset_analysis_pass(db, articles, te_summaries)
 
-    _run_asset_analysis_pass(db, articles, te_summaries, model)
+    logger.info(f"AI 2-pass analysis complete with {provider_info['provider']}.")
 
-    logger.info("Gemini 2-pass analysis complete.")
+
+# Backwards compatibility alias
+run_gemini_analysis = run_ai_analysis
+
