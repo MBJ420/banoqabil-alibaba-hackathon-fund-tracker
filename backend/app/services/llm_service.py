@@ -13,20 +13,39 @@ Supports:
 import os
 import json
 import logging
+from pathlib import Path
 from typing import Dict, Any, List, Optional
 import httpx
-from dotenv import load_dotenv
+from dotenv import load_dotenv, find_dotenv
 
-load_dotenv()
+# Try finding .env from current directory or backend directory
+backend_dir = Path(__file__).resolve().parent.parent.parent
+env_paths = [
+    Path.cwd() / ".env",
+    backend_dir / ".env",
+    backend_dir.parent / ".env"
+]
+for p in env_paths:
+    if p.exists():
+        load_dotenv(p)
+load_dotenv(find_dotenv())
+
 logger = logging.getLogger(__name__)
 
-# Alibaba Cloud Model Studio (DashScope) Configuration
-DASHSCOPE_API_KEY = os.environ.get("DASHSCOPE_API_KEY") or os.environ.get("ALIBABA_CLOUD_API_KEY", "")
-DASHSCOPE_BASE_URL = os.environ.get("DASHSCOPE_BASE_URL", "https://dashscope-intl.aliyuncs.com/compatible-mode/v1").rstrip('/')
-QWEN_MODEL = os.environ.get("QWEN_MODEL_NAME", "qwen-plus")
 
-# Google Gemini Fallback Configuration
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
+def get_dashscope_config():
+    api_key = os.environ.get("DASHSCOPE_API_KEY") or os.environ.get("ALIBABA_CLOUD_API_KEY", "")
+    raw_url = (os.environ.get("DASHSCOPE_BASE_URL") or "").strip().rstrip('/')
+    if not raw_url or "maas.aliyuncs.com" in raw_url:
+        base_url = "https://dashscope-intl.aliyuncs.com/compatible-mode/v1"
+    else:
+        base_url = raw_url
+    model = os.environ.get("QWEN_MODEL_NAME", "qwen-plus")
+    return api_key, base_url, model
+
+
+def get_gemini_key():
+    return os.environ.get("GEMINI_API_KEY", "")
 
 
 def clean_json_markdown(text: str) -> str:
@@ -43,15 +62,18 @@ def clean_json_markdown(text: str) -> str:
 
 def get_active_ai_provider() -> Dict[str, Any]:
     """Returns metadata about the active AI model and provider."""
-    if DASHSCOPE_API_KEY:
+    dashscope_key, _, qwen_model = get_dashscope_config()
+    gemini_key = get_gemini_key()
+    
+    if dashscope_key:
         return {
             "provider": "Alibaba Cloud Model Studio",
-            "model": QWEN_MODEL,
+            "model": qwen_model,
             "is_alibaba_cloud": True,
             "engine": "Qwen 2.5 (DashScope)",
             "status": "ready"
         }
-    elif GEMINI_API_KEY:
+    elif gemini_key:
         return {
             "provider": "Google Gemini",
             "model": "gemini-2.5-flash",
@@ -75,13 +97,14 @@ def _call_qwen_chat(
     response_format: Optional[str] = None
 ) -> str:
     """Execute a chat completion request against Alibaba Cloud Model Studio."""
-    url = f"{DASHSCOPE_BASE_URL}/chat/completions"
+    dashscope_key, base_url, qwen_model = get_dashscope_config()
+    url = f"{base_url}/chat/completions"
     headers = {
-        "Authorization": f"Bearer {DASHSCOPE_API_KEY}",
+        "Authorization": f"Bearer {dashscope_key}",
         "Content-Type": "application/json"
     }
     payload: Dict[str, Any] = {
-        "model": QWEN_MODEL,
+        "model": qwen_model,
         "messages": messages,
         "temperature": temperature,
     }
@@ -102,7 +125,8 @@ def _call_gemini_chat(
 ) -> str:
     """Execute a fallback generation request against Google Gemini."""
     import google.generativeai as genai
-    genai.configure(api_key=GEMINI_API_KEY)
+    gemini_key = get_gemini_key()
+    genai.configure(api_key=gemini_key)
     
     full_prompt = f"{system_prompt}\n\n{prompt}" if system_prompt else prompt
     model = genai.GenerativeModel("gemini-2.5-flash")
@@ -115,9 +139,12 @@ def _call_gemini_chat(
 
 def generate_text(prompt: str, system_prompt: str = "", temperature: float = 0.2) -> str:
     """Generate freeform text using Alibaba Cloud Qwen 2.5 with Gemini fallback."""
-    if DASHSCOPE_API_KEY:
+    dashscope_key, _, qwen_model = get_dashscope_config()
+    gemini_key = get_gemini_key()
+
+    if dashscope_key:
         try:
-            logger.info(f"Calling Alibaba Cloud Model Studio ({QWEN_MODEL})...")
+            logger.info(f"Calling Alibaba Cloud Model Studio ({qwen_model})...")
             messages = []
             if system_prompt:
                 messages.append({"role": "system", "content": system_prompt})
@@ -126,7 +153,7 @@ def generate_text(prompt: str, system_prompt: str = "", temperature: float = 0.2
         except Exception as e:
             logger.warning(f"Alibaba Cloud Qwen call failed ({e}), falling back to Gemini...")
     
-    if GEMINI_API_KEY:
+    if gemini_key:
         try:
             logger.info("Calling Google Gemini fallback...")
             return _call_gemini_chat(prompt, system_prompt=system_prompt, temperature=temperature)
@@ -139,15 +166,18 @@ def generate_text(prompt: str, system_prompt: str = "", temperature: float = 0.2
 
 def generate_json(prompt: str, system_prompt: str = "", temperature: float = 0.2) -> Dict[str, Any]:
     """Generate a structured JSON dictionary using Alibaba Cloud Qwen 2.5 with Gemini fallback."""
+    dashscope_key, _, qwen_model = get_dashscope_config()
+    gemini_key = get_gemini_key()
+
     json_system_prompt = (
         (system_prompt + "\n" if system_prompt else "") +
         "You MUST respond ONLY with a valid JSON object. Do not include any explanations, greetings, or markdown code fences."
     )
     
     raw_text = ""
-    if DASHSCOPE_API_KEY:
+    if dashscope_key:
         try:
-            logger.info(f"Generating JSON via Alibaba Cloud Model Studio ({QWEN_MODEL})...")
+            logger.info(f"Generating JSON via Alibaba Cloud Model Studio ({qwen_model})...")
             messages = [
                 {"role": "system", "content": json_system_prompt},
                 {"role": "user", "content": prompt}
@@ -158,7 +188,7 @@ def generate_json(prompt: str, system_prompt: str = "", temperature: float = 0.2
         except Exception as e:
             logger.warning(f"Alibaba Cloud Qwen JSON generation failed ({e}), falling back to Gemini...")
 
-    if GEMINI_API_KEY:
+    if gemini_key:
         try:
             logger.info("Generating JSON via Google Gemini fallback...")
             raw_text = _call_gemini_chat(prompt, system_prompt=json_system_prompt, temperature=temperature)
