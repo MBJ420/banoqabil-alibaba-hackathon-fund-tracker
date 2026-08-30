@@ -271,8 +271,8 @@ LIVE MARKET CONTEXT:
 Return only the JSON diagnostic object."""
 
     result = generate_json(
+        prompt=user_message,
         system_prompt=DIAGNOSTIC_SYSTEM_PROMPT,
-        user_message=user_message,
         temperature=0.4,
     )
 

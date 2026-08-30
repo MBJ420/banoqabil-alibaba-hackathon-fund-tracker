@@ -49,12 +49,17 @@ def _format_dt(dt: datetime | None) -> str | None:
     return dt.isoformat()
 
 
-# ─── GET /news/status ─────────────────────────────────────────────────────────
-
 @router.get("/status")
 def get_news_status(db: Session = Depends(get_db)):
     """Returns the current refresh status and timestamp."""
     meta = _get_or_create_meta(db)
+    
+    # Auto-heal: If status or ai_status got stuck from a prior process kill, recover cleanly
+    if meta.ai_status == "analyzing" and meta.last_ai_refreshed_at:
+        if datetime.utcnow() - meta.last_ai_refreshed_at > timedelta(minutes=2):
+            meta.ai_status = "idle"
+            db.commit()
+
     return {
         "status":            meta.refresh_status,
         "last_refreshed_at": _format_dt(meta.last_refreshed_at),
@@ -63,6 +68,7 @@ def get_news_status(db: Session = Depends(get_db)):
         "last_ai_refreshed_at": _format_dt(meta.last_ai_refreshed_at),
         "ai_error_message":  meta.ai_error_message,
     }
+
 
 
 # ─── GET /news/scrapers/status ────────────────────────────────────────────────
@@ -214,15 +220,15 @@ def trigger_news_refresh(force: bool = False, db: Session = Depends(get_db)):
 # ─── POST /news/refresh-ai ────────────────────────────────────────────────────
 
 @router.post("/refresh-ai")
-def trigger_ai_refresh(db: Session = Depends(get_db)):
+def trigger_ai_refresh(force: bool = False, db: Session = Depends(get_db)):
     """
-    Spawns a background thread to run the AI analysis (Gemini).
+    Spawns a background thread to run the AI analysis (Qwen 2.5 / Gemini).
     Returns immediately.
     Poll GET /news/status for ai_status.
     """
     meta = _get_or_create_meta(db)
 
-    if meta.ai_status == "analyzing":
+    if meta.ai_status == "analyzing" and not force:
         return {"status": "already_analyzing", "message": "AI analysis is already in progress."}
 
     def _bg_ai_refresh():
@@ -233,6 +239,7 @@ def trigger_ai_refresh(db: Session = Depends(get_db)):
 
     logger.info("AI pipeline triggered in background thread.")
     return {"status": "analyzing", "message": "AI analysis started."}
+
 
 
 # ─── DELETE /news/context/{id} ────────────────────────────────────────────────

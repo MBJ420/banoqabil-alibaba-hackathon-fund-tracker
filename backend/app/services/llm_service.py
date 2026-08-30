@@ -137,8 +137,9 @@ def _call_gemini_chat(
     return response.text
 
 
-def generate_text(prompt: str, system_prompt: str = "", temperature: float = 0.2) -> str:
+def generate_text(prompt: str = "", system_prompt: str = "", temperature: float = 0.2, user_message: str = "") -> str:
     """Generate freeform text using Alibaba Cloud Qwen 2.5 with Gemini fallback."""
+    user_prompt = prompt or user_message
     dashscope_key, _, qwen_model = get_dashscope_config()
     gemini_key = get_gemini_key()
 
@@ -148,7 +149,7 @@ def generate_text(prompt: str, system_prompt: str = "", temperature: float = 0.2
             messages = []
             if system_prompt:
                 messages.append({"role": "system", "content": system_prompt})
-            messages.append({"role": "user", "content": prompt})
+            messages.append({"role": "user", "content": user_prompt})
             return _call_qwen_chat(messages, temperature=temperature)
         except Exception as e:
             logger.warning(f"Alibaba Cloud Qwen call failed ({e}), falling back to Gemini...")
@@ -156,7 +157,7 @@ def generate_text(prompt: str, system_prompt: str = "", temperature: float = 0.2
     if gemini_key:
         try:
             logger.info("Calling Google Gemini fallback...")
-            return _call_gemini_chat(prompt, system_prompt=system_prompt, temperature=temperature)
+            return _call_gemini_chat(user_prompt, system_prompt=system_prompt, temperature=temperature)
         except Exception as e:
             logger.error(f"Gemini fallback also failed: {e}")
             raise e
@@ -164,8 +165,9 @@ def generate_text(prompt: str, system_prompt: str = "", temperature: float = 0.2
     raise ValueError("Neither DASHSCOPE_API_KEY nor GEMINI_API_KEY is configured.")
 
 
-def generate_json(prompt: str, system_prompt: str = "", temperature: float = 0.2) -> Dict[str, Any]:
+def generate_json(prompt: str = "", system_prompt: str = "", temperature: float = 0.2, user_message: str = "") -> Dict[str, Any]:
     """Generate a structured JSON dictionary using Alibaba Cloud Qwen 2.5 with Gemini fallback."""
+    user_prompt = prompt or user_message
     dashscope_key, _, qwen_model = get_dashscope_config()
     gemini_key = get_gemini_key()
 
@@ -180,7 +182,7 @@ def generate_json(prompt: str, system_prompt: str = "", temperature: float = 0.2
             logger.info(f"Generating JSON via Alibaba Cloud Model Studio ({qwen_model})...")
             messages = [
                 {"role": "system", "content": json_system_prompt},
-                {"role": "user", "content": prompt}
+                {"role": "user", "content": user_prompt}
             ]
             raw_text = _call_qwen_chat(messages, temperature=temperature, response_format="json_object")
             cleaned = clean_json_markdown(raw_text)
@@ -191,7 +193,7 @@ def generate_json(prompt: str, system_prompt: str = "", temperature: float = 0.2
     if gemini_key:
         try:
             logger.info("Generating JSON via Google Gemini fallback...")
-            raw_text = _call_gemini_chat(prompt, system_prompt=json_system_prompt, temperature=temperature)
+            raw_text = _call_gemini_chat(user_prompt, system_prompt=json_system_prompt, temperature=temperature)
             cleaned = clean_json_markdown(raw_text)
             return json.loads(cleaned)
         except Exception as e:
@@ -199,3 +201,4 @@ def generate_json(prompt: str, system_prompt: str = "", temperature: float = 0.2
             raise e
 
     raise ValueError("Neither DASHSCOPE_API_KEY nor GEMINI_API_KEY is configured.")
+
