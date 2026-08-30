@@ -748,3 +748,41 @@ def delete_statement(
     db.commit()
     return {"message": "Statement deleted successfully"}
 
+
+# ─── POST /dashboard/ai-diagnostic ───────────────────────────────────────────
+
+@router.post("/ai-diagnostic", response_model=Dict[str, Any])
+def run_ai_portfolio_diagnostic(
+    current_user: schemas.User = Depends(utils.get_current_user),
+    db: Session = Depends(database.get_db)
+):
+    """
+    Feeds the user's portfolio (% allocations, fund/bank names, returns) and
+    live macro context from the AI news module into Qwen 2.5.
+
+    Returns a structured AI diagnostic:
+      - risk_score (0-100), risk_label, risk_color
+      - summary narrative
+      - ranked rebalancing recommendations
+      - portfolio strengths
+      - ai_provider / ai_model info
+
+    Privacy: NO absolute amounts, NO holder name from PDF, NO account number
+    are ever included in the AI payload.
+    """
+    from fastapi import HTTPException
+    from app.services.portfolio_ai_service import run_ai_diagnostic
+
+    try:
+        result = run_ai_diagnostic(db, current_user.id, current_user.username)
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+    except Exception as e:
+        logger.error(f"AI diagnostic failed for user {current_user.id}: {e}")
+        raise HTTPException(
+            status_code=503,
+            detail=f"AI diagnostic temporarily unavailable: {str(e)}"
+        )
+
+

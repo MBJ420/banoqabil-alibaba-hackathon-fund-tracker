@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import client from '../api/client';
 import { 
-  ShieldCheck, AlertTriangle, AlertCircle, Info, TrendingUp, Lightbulb, Zap, HelpCircle 
+  ShieldCheck, AlertTriangle, AlertCircle, Info, TrendingUp, Lightbulb, Zap, HelpCircle,
+  BrainCircuit, Sparkles, CheckCircle2, ChevronRight, RefreshCw
 } from 'lucide-react';
 import FeatureInfoModal, { type FeatureGuideContent } from '../components/FeatureInfoModal';
 
@@ -76,6 +77,28 @@ interface OutperformersResponse {
   results: OutperformerResult[];
 }
 
+// ── AI Diagnostic Interfaces ──────────────────────────────────────────────────
+
+interface DiagRecommendation {
+  priority: number;
+  type: string;
+  title: string;
+  detail: string;
+  suggested_allocation_pct?: number | null;
+}
+
+interface AIDiagnosticResponse {
+  risk_score: number;
+  risk_label: string;
+  risk_color: 'success' | 'info' | 'warning' | 'danger';
+  summary: string;
+  recommendations: DiagRecommendation[];
+  strengths: string[];
+  disclaimer: string;
+  ai_provider: string;
+  ai_model: string;
+}
+
 const SEVERITY_STYLES = {
   danger: 'bg-red-500/10 border-red-500/30 text-red-500',
   warning: 'bg-yellow-500/10 border-yellow-500/30 text-yellow-500',
@@ -97,6 +120,11 @@ export default function PortfolioSuggestions() {
   const [outperformersData, setOutperformersData] = useState<OutperformersResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // AI Diagnostic state — not auto-run, triggered by user
+  const [diagLoading, setDiagLoading] = useState(false);
+  const [diagData, setDiagData] = useState<AIDiagnosticResponse | null>(null);
+  const [diagError, setDiagError] = useState<string | null>(null);
+
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
@@ -117,6 +145,20 @@ export default function PortfolioSuggestions() {
     };
     fetchData();
   }, []);
+
+  const runDiagnostic = async () => {
+    setDiagLoading(true);
+    setDiagError(null);
+    setDiagData(null);
+    try {
+      const res = await client.post('/dashboard/ai-diagnostic');
+      setDiagData(res.data);
+    } catch (err: any) {
+      setDiagError(err.response?.data?.detail || err.message || 'AI diagnostic failed.');
+    } finally {
+      setDiagLoading(false);
+    }
+  };
 
   return (
     <div className="flex-1 overflow-y-auto custom-scrollbar p-6 md:p-8">
@@ -190,6 +232,163 @@ export default function PortfolioSuggestions() {
                   ))}
                 </div>
               )}
+            </section>
+
+            {/* ── AI Portfolio Diagnostic Section ────────────────────────── */}
+            <section className="bg-surface border border-white/5 rounded-2xl p-6 relative overflow-hidden">
+              {/* Subtle AI glow background */}
+              <div className="absolute inset-0 bg-gradient-to-br from-violet-600/5 via-transparent to-transparent pointer-events-none rounded-2xl" />
+
+              <div className="relative">
+                {/* Header */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
+                  <div>
+                    <h3 className="text-lg font-bold flex items-center gap-2">
+                      <BrainCircuit size={20} className="text-violet-400" />
+                      AI Portfolio Diagnostic
+                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-violet-500/20 text-violet-300 border border-violet-500/30 flex items-center gap-1">
+                        <Sparkles size={9} />
+                        Alibaba Cloud · {diagData ? diagData.ai_model : 'Qwen'}
+                      </span>
+                    </h3>
+                    <p className="text-xs text-text-secondary mt-1">
+                      Contextual risk analysis using your % allocations and live macro intelligence. No amounts or personal data are shared.
+                    </p>
+                  </div>
+                  <button
+                    onClick={runDiagnostic}
+                    disabled={diagLoading}
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-500 disabled:opacity-60 disabled:cursor-not-allowed text-white text-xs font-semibold transition-all shadow-lg shadow-violet-900/30 shrink-0 self-start sm:self-auto"
+                  >
+                    {diagLoading
+                      ? <><RefreshCw size={13} className="animate-spin" /> Analyzing…</>
+                      : diagData
+                        ? <><RefreshCw size={13} /> Re-run Diagnostic</>
+                        : <><BrainCircuit size={13} /> Run AI Diagnostic</>
+                    }
+                  </button>
+                </div>
+
+                {/* Loading State */}
+                {diagLoading && (
+                  <div className="flex flex-col items-center gap-3 py-10 text-text-secondary">
+                    <div className="w-10 h-10 rounded-full border-2 border-violet-500/40 border-t-violet-400 animate-spin" />
+                    <p className="text-sm">Qwen 2.5 is analyzing your portfolio structure and macro context…</p>
+                  </div>
+                )}
+
+                {/* Error State */}
+                {diagError && !diagLoading && (
+                  <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 flex items-start gap-3 text-sm">
+                    <AlertTriangle size={16} className="shrink-0 mt-0.5" />
+                    <p>{diagError}</p>
+                  </div>
+                )}
+
+                {/* Empty / prompt state */}
+                {!diagLoading && !diagData && !diagError && (
+                  <div className="flex flex-col items-center gap-2 py-10 text-text-secondary border border-dashed border-white/10 rounded-xl">
+                    <BrainCircuit size={30} className="text-violet-500/40" />
+                    <p className="text-sm">Click <strong className="text-violet-400">Run AI Diagnostic</strong> to generate your personalized risk analysis.</p>
+                    <p className="text-xs opacity-60">Uses live macro context from the AI News module.</p>
+                  </div>
+                )}
+
+                {/* Result Card */}
+                {diagData && !diagLoading && (() => {
+                  const scoreColor = {
+                    success: 'text-emerald-400',
+                    info:    'text-blue-400',
+                    warning: 'text-yellow-400',
+                    danger:  'text-red-400',
+                  }[diagData.risk_color];
+                  const scoreBg = {
+                    success: 'bg-emerald-500/10 border-emerald-500/30',
+                    info:    'bg-blue-500/10 border-blue-500/30',
+                    warning: 'bg-yellow-500/10 border-yellow-500/30',
+                    danger:  'bg-red-500/10 border-red-500/30',
+                  }[diagData.risk_color];
+
+                  return (
+                    <div className="space-y-5">
+                      {/* Risk Score + Summary Row */}
+                      <div className="flex flex-col sm:flex-row gap-4">
+                        {/* Score Gauge */}
+                        <div className={`flex flex-col items-center justify-center p-5 rounded-2xl border shrink-0 min-w-[120px] ${scoreBg}`}>
+                          <span className={`text-4xl font-black tabular-nums ${scoreColor}`}>{diagData.risk_score}</span>
+                          <span className="text-[10px] text-text-secondary mt-1 uppercase tracking-widest">/ 100</span>
+                          <span className={`text-xs font-bold mt-2 ${scoreColor}`}>{diagData.risk_label}</span>
+                        </div>
+                        {/* Summary */}
+                        <div className="flex-1 flex flex-col justify-center bg-black/20 rounded-2xl border border-white/5 p-4">
+                          <p className="text-xs text-text-secondary uppercase tracking-wider mb-1 font-semibold">AI Analysis</p>
+                          <p className="text-sm text-white/90 leading-relaxed">{diagData.summary}</p>
+                        </div>
+                      </div>
+
+                      {/* Strengths */}
+                      {diagData.strengths.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {diagData.strengths.map((s, i) => (
+                            <span key={i} className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-full">
+                              <CheckCircle2 size={11} />
+                              {s}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Recommendations */}
+                      {diagData.recommendations.length > 0 && (
+                        <div>
+                          <p className="text-xs text-text-secondary uppercase tracking-wider font-semibold mb-3">Rebalancing Recommendations</p>
+                          <div className="space-y-3">
+                            {diagData.recommendations.map((rec, i) => {
+                              const typeColor: Record<string, string> = {
+                                rebalance:       'text-yellow-400 bg-yellow-500/10 border-yellow-500/30',
+                                diversify:       'text-blue-400 bg-blue-500/10 border-blue-500/30',
+                                reduce_risk:     'text-red-400 bg-red-500/10 border-red-500/30',
+                                increase_growth: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30',
+                                tax_note:        'text-violet-400 bg-violet-500/10 border-violet-500/30',
+                              };
+                              const typeLabel: Record<string, string> = {
+                                rebalance: 'Rebalance', diversify: 'Diversify',
+                                reduce_risk: 'Reduce Risk', increase_growth: 'Growth Opportunity', tax_note: 'Tax Note',
+                              };
+                              const cls = typeColor[rec.type] ?? 'text-text-secondary bg-white/5 border-white/10';
+                              return (
+                                <div key={i} className="flex gap-3 bg-black/20 rounded-xl border border-white/5 p-4">
+                                  <div className={`text-xs font-bold px-2 py-0.5 rounded-md border h-fit shrink-0 mt-0.5 ${cls}`}>
+                                    {rec.priority}
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 flex-wrap mb-1">
+                                      <p className="font-semibold text-sm text-white">{rec.title}</p>
+                                      <span className={`text-[10px] px-2 py-0.5 rounded-full border ${cls}`}>
+                                        {typeLabel[rec.type] ?? rec.type}
+                                      </span>
+                                    </div>
+                                    <p className="text-xs text-text-secondary leading-relaxed">{rec.detail}</p>
+                                    {rec.suggested_allocation_pct != null && (
+                                      <div className="flex items-center gap-1.5 mt-2 text-xs text-violet-300">
+                                        <ChevronRight size={11} />
+                                        Suggested target: <strong>{rec.suggested_allocation_pct}%</strong>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Disclaimer */}
+                      <p className="text-[10px] text-text-secondary/60 italic pt-1">{diagData.disclaimer}</p>
+                    </div>
+                  );
+                })()}
+              </div>
             </section>
 
             {/* Outperformance Intelligence Section */}
