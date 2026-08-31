@@ -14,9 +14,10 @@ Endpoints:
 
 import threading
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+
 
 from app.database import get_db
 from app.models import NewsArticle, AssetPrediction, WorldContextEntry, NewsMetadata, ScraperStatus
