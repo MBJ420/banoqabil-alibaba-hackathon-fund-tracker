@@ -29,6 +29,10 @@ import json
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/news", tags=["News Intelligence"])
 
+# Live background thread tracking
+_news_thread: threading.Thread | None = None
+_ai_thread: threading.Thread | None = None
+
 
 # ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -53,22 +57,42 @@ def _format_dt(dt: datetime | None) -> str | None:
 @router.get("/status")
 def get_news_status(db: Session = Depends(get_db)):
     """Returns the current refresh status and timestamp."""
+    global _news_thread, _ai_thread
     meta = _get_or_create_meta(db)
-    
-    # Auto-heal: If status or ai_status got stuck from a prior process kill, recover cleanly
-    if meta.ai_status == "analyzing" and meta.last_ai_refreshed_at:
-        if datetime.utcnow() - meta.last_ai_refreshed_at > timedelta(minutes=2):
-            meta.ai_status = "idle"
-            db.commit()
+
+    # Sync live thread status
+    is_news_running = _news_thread is not None and _news_thread.is_alive()
+    is_ai_running = _ai_thread is not None and _ai_thread.is_alive()
+
+    # If background thread is running, guarantee status reflects it
+    if is_ai_running:
+        ai_stat = "analyzing"
+    elif meta.ai_status == "analyzing":
+        # Thread has finished or died, sync DB back to idle
+        meta.ai_status = "idle"
+        db.commit()
+        ai_stat = "idle"
+    else:
+        ai_stat = meta.ai_status
+
+    if is_news_running:
+        news_stat = "refreshing"
+    elif meta.refresh_status == "refreshing":
+        meta.refresh_status = "idle"
+        db.commit()
+        news_stat = "idle"
+    else:
+        news_stat = meta.refresh_status
 
     return {
-        "status":            meta.refresh_status,
+        "status":            news_stat,
         "last_refreshed_at": _format_dt(meta.last_refreshed_at),
         "error_message":     meta.error_message,
-        "ai_status":         meta.ai_status,
+        "ai_status":         ai_stat,
         "last_ai_refreshed_at": _format_dt(meta.last_ai_refreshed_at),
         "ai_error_message":  meta.ai_error_message,
     }
+
 
 
 
@@ -203,16 +227,22 @@ def trigger_news_refresh(force: bool = False, db: Session = Depends(get_db)):
     Returns immediately (< 1ms) — never blocks the FastAPI event loop.
     Poll GET /news/status to detect completion.
     """
+    global _news_thread
     meta = _get_or_create_meta(db)
 
-    if meta.refresh_status == "refreshing":
+    is_running = _news_thread is not None and _news_thread.is_alive()
+    if is_running and not force:
         return {"status": "already_refreshing", "message": "A refresh is already in progress."}
+
+    meta.refresh_status = "refreshing"
+    meta.error_message = None
+    db.commit()
 
     def _bg_refresh():
         run_news_pipeline(force=force)
 
-    t = threading.Thread(target=_bg_refresh, daemon=True)
-    t.start()
+    _news_thread = threading.Thread(target=_bg_refresh, daemon=True)
+    _news_thread.start()
 
     logger.info("News refresh triggered in background thread.")
     return {"status": "refreshing", "message": "News refresh started. Poll /news/status for updates."}
@@ -227,19 +257,26 @@ def trigger_ai_refresh(force: bool = False, db: Session = Depends(get_db)):
     Returns immediately.
     Poll GET /news/status for ai_status.
     """
+    global _ai_thread
     meta = _get_or_create_meta(db)
 
-    if meta.ai_status == "analyzing" and not force:
+    is_running = _ai_thread is not None and _ai_thread.is_alive()
+    if is_running and not force:
         return {"status": "already_analyzing", "message": "AI analysis is already in progress."}
+
+    meta.ai_status = "analyzing"
+    meta.ai_error_message = None
+    db.commit()
 
     def _bg_ai_refresh():
         run_ai_pipeline()
 
-    t = threading.Thread(target=_bg_ai_refresh, daemon=True)
-    t.start()
+    _ai_thread = threading.Thread(target=_bg_ai_refresh, daemon=True)
+    _ai_thread.start()
 
     logger.info("AI pipeline triggered in background thread.")
     return {"status": "analyzing", "message": "AI analysis started."}
+
 
 
 

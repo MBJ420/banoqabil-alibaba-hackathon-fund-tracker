@@ -255,31 +255,43 @@ export default function AINews() {
     fetchAll();
   }, [fetchAll]);
 
+  // Sync refreshing state if server is analyzing on initial load
+  useEffect(() => {
+    if (status?.ai_status === 'analyzing' && !refreshing) {
+      setRefreshing(true);
+    }
+  }, [status?.ai_status]);
+
   // Poll status when refreshing
   useEffect(() => {
     if (!refreshing) return;
     const interval = setInterval(async () => {
-      const res = await client.get('/news/status');
-      const s = res.data.ai_status;
-      setStatus(res.data);
-      if (s !== 'analyzing') {
-        setRefreshing(false);
-        await fetchAll();
-        clearInterval(interval);
+      try {
+        const res = await client.get('/news/status');
+        const s = res.data.ai_status;
+        setStatus(res.data);
+        if (s !== 'analyzing') {
+          setRefreshing(false);
+          await fetchAll();
+          clearInterval(interval);
+        }
+      } catch (err) {
+        console.error('Failed to poll status', err);
       }
-    }, 5000);
+    }, 2000);
     return () => clearInterval(interval);
-  }, [refreshing]);
+  }, [refreshing, fetchAll]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
-      await client.post('/news/refresh-ai');
+      await client.post('/news/refresh-ai?force=true');
     } catch (e) { 
       setRefreshing(false);
       console.error('Failed to refresh news', e);
     }
   };
+
 
   const handleDeactivateContext = async (id: number) => {
     try {
