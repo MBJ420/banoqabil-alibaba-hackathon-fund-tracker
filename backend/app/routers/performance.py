@@ -1,19 +1,62 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.orm import Session
 from sqlalchemy import desc, func
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 import os
 import shutil
+import threading
+from datetime import datetime
 
 from ..database import get_db
-from ..models import Fund, FundNAVHistory, FundPerformanceMetrics
+from ..models import Fund, FundNAVHistory, FundPerformanceMetrics, ScraperStatus
 from ..services.fmr_parser import parse_fmr_pdf_with_ai
+from ..services.scraper import scrape_mufap_data
 from ..config import FMR_DIR
 
 router = APIRouter(
     prefix="/api/performance",
     tags=["performance"]
 )
+
+# Global thread reference to track live execution state
+_scraper_thread: Optional[threading.Thread] = None
+
+
+@router.get("/scraper-status")
+def get_scraper_status(db: Session = Depends(get_db)):
+    """
+    Returns the execution state, health, and timestamp of the MUFAP scraper.
+    """
+    status = db.query(ScraperStatus).filter(ScraperStatus.scraper_name == "mufap_daily").first()
+    is_running = _scraper_thread is not None and _scraper_thread.is_alive()
+    return {
+        "is_running": is_running,
+        "is_healthy": status.is_healthy if status else True,
+        "last_run_at": status.last_run_at.isoformat() if status and status.last_run_at else None,
+        "error_message": status.error_message if status else None,
+        "tracked_funds_count": db.query(Fund).count(),
+    }
+
+
+@router.post("/trigger-scraper")
+def trigger_mufap_scraper():
+    """
+    Manually launches the MUFAP Playwright daily NAV scraper in the background.
+    """
+    global _scraper_thread
+    if _scraper_thread is not None and _scraper_thread.is_alive():
+        return {
+            "status": "already_running",
+            "message": "MUFAP scraper is already running in background."
+        }
+    
+    _scraper_thread = threading.Thread(target=scrape_mufap_data, daemon=True)
+    _scraper_thread.start()
+    return {
+        "status": "started",
+        "message": "Live MUFAP scraper launched in background."
+    }
+
 
 @router.post("/upload-fmr")
 def upload_fmr(file: UploadFile = File(...), db: Session = Depends(get_db)):

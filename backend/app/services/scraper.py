@@ -133,11 +133,44 @@ def scrape_mufap_data():
         try:
             tracked_funds = {f.name.lower(): f.id for f in db.query(Fund).all()}
             if not tracked_funds:
-                 logger.info("No funds tracked in DB. Exiting.")
-                 return
+                logger.info("No funds tracked in DB. Auto-discovering target bank funds from MUFAP table...")
+                from app.models import Bank
+                bank_map = {}
+                for b_name in ["Meezan", "HBL", "Atlas", "Faysal"]:
+                    b = db.query(Bank).filter(Bank.name.ilike(b_name)).first()
+                    if not b:
+                        b = Bank(name=b_name)
+                        db.add(b)
+                        db.commit()
+                        db.refresh(b)
+                    bank_map[b_name.lower()] = b.id
+                
+                for line in table_text.split('\n'):
+                    cols = line.split('\t')
+                    if len(cols) > 3:
+                        cand_name = cols[0].strip()
+                        cand_lower = cand_name.lower()
+                        matched_b_id = None
+                        if 'meezan' in cand_lower or 'al meezan' in cand_lower:
+                            matched_b_id = bank_map.get('meezan')
+                        elif 'hbl' in cand_lower:
+                            matched_b_id = bank_map.get('hbl')
+                        elif 'atlas' in cand_lower:
+                            matched_b_id = bank_map.get('atlas')
+                        elif 'faysal' in cand_lower:
+                            matched_b_id = bank_map.get('faysal')
+                        
+                        if matched_b_id and cand_name:
+                            existing = db.query(Fund).filter(Fund.name == cand_name).first()
+                            if not existing:
+                                db.add(Fund(name=cand_name, bank_id=matched_b_id))
+                db.commit()
+                tracked_funds = {f.name.lower(): f.id for f in db.query(Fund).all()}
+                logger.info(f"Auto-discovered {len(tracked_funds)} target funds from MUFAP.")
                  
             today = datetime.now().strftime("%Y-%m-%d")
             processed_count = 0
+
             
             lines = table_text.split('\n')
             

@@ -4,7 +4,8 @@ import client from '../api/client';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import ReactApexChart from 'react-apexcharts';
 import type { ApexOptions } from 'apexcharts';
-import { LogOut, LayoutDashboard, Database, TrendingUp, Zap, ArrowUpRight, Activity, Menu, Building2, Download, FileText, Sun, Moon, Calculator, Info, Search, UploadCloud, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Filter, Newspaper, Brain, Lightbulb, X, Eye, EyeOff, PiggyBank, Receipt, LineChart, HelpCircle } from 'lucide-react';
+import { LogOut, LayoutDashboard, Database, TrendingUp, Zap, ArrowUpRight, Activity, Menu, Building2, Download, FileText, Sun, Moon, Calculator, Info, Search, UploadCloud, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Filter, Newspaper, Brain, Lightbulb, X, Eye, EyeOff, PiggyBank, Receipt, LineChart, HelpCircle, RefreshCw } from 'lucide-react';
+
 import StatementUploadModal from '../components/StatementUploadModal';
 import PortfolioDataManagerModal from '../components/PortfolioDataManagerModal';
 import { useToast } from '../components/Toast';
@@ -73,6 +74,9 @@ const Dashboard = () => {
     // Bank level Performance State
     const [bankPerformanceData, setBankPerformanceData] = useState<any[]>([]);
     const [isPerformanceModalOpen, setIsPerformanceModalOpen] = useState(false);
+    const [scraperStatus, setScraperStatus] = useState<{ is_running: boolean; last_run_at: string | null; error_message: string | null; tracked_funds_count: number } | null>(null);
+    const [isScrapingMufap, setIsScrapingMufap] = useState(false);
+
 
     // Discovery Engine Filters
     const [fundSearchQuery, setFundSearchQuery] = useState("");
@@ -205,6 +209,79 @@ const Dashboard = () => {
     useEffect(() => {
         fetchBankConfigs();
     }, []);
+
+    const fetchScraperStatus = useCallback(async () => {
+        try {
+            const res = await client.get('/api/performance/scraper-status');
+            setScraperStatus(res.data);
+            if (res.data.is_running) {
+                setIsScrapingMufap(true);
+            }
+        } catch (e) {
+            console.error('Failed to fetch scraper status', e);
+        }
+    }, []);
+
+    const handleTriggerScraper = async () => {
+        if (isScrapingMufap) return;
+        setIsScrapingMufap(true);
+        try {
+            const res = await client.post('/api/performance/trigger-scraper');
+            toast(res.data.message || 'MUFAP daily NAV scraper launched.', 'info');
+        } catch (e: any) {
+            toast('Failed to trigger scraper: ' + (e.response?.data?.detail || e.message), 'error');
+            setIsScrapingMufap(false);
+        }
+    };
+
+    const formatLastScraped = (isoString: string | null | undefined) => {
+        if (!isoString) return 'Never';
+        try {
+            const date = new Date(isoString);
+            const now = new Date();
+            const diffMs = now.getTime() - date.getTime();
+            const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+            const diffMins = Math.floor(diffMs / (1000 * 60));
+            if (diffMins < 2) return 'Just now';
+            if (diffMins < 60) return `${diffMins}m ago`;
+            if (diffHours < 24) return `${diffHours}h ago`;
+            return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+        } catch {
+            return String(isoString);
+        }
+    };
+
+    // Poll scraper status while running
+    useEffect(() => {
+        if (!isScrapingMufap) return;
+        const interval = setInterval(async () => {
+            try {
+                const res = await client.get('/api/performance/scraper-status');
+                setScraperStatus(res.data);
+                if (!res.data.is_running) {
+                    setIsScrapingMufap(false);
+                    toast('MUFAP live NAV scrape completed successfully!', 'success');
+                    if (selectedBank) {
+                        const bankRes = await client.get(`/api/performance/bank/${selectedBank}`);
+                        setBankPerformanceData(bankRes.data);
+                    }
+                    fetchData();
+                    clearInterval(interval);
+                }
+            } catch (e) {
+                console.error('Scraper status poll failed', e);
+            }
+        }, 3000);
+        return () => clearInterval(interval);
+    }, [isScrapingMufap, selectedBank, fetchData, toast]);
+
+    // Fetch scraper status when modal opens or on initial load
+    useEffect(() => {
+        if (isPerformanceModalOpen) {
+            fetchScraperStatus();
+        }
+    }, [isPerformanceModalOpen, fetchScraperStatus]);
+
 
     const handleLogout = () => {
         localStorage.removeItem('token');
@@ -1055,19 +1132,44 @@ const Dashboard = () => {
                                 <X size={16} />
                             </button>
 
-                            <div className="flex items-center gap-3 mb-6 shrink-0 z-0">
-                                <div className="p-3 bg-emerald-500/20 text-emerald-500 rounded-2xl">
-                                    <TrendingUp size={28} />
+                            <div className="flex items-center justify-between gap-4 mb-6 shrink-0 z-0 flex-wrap">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-3 bg-emerald-500/20 text-emerald-500 rounded-2xl">
+                                        <TrendingUp size={28} />
+                                    </div>
+                                    <div>
+                                        <h2 className="text-2xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">
+                                            {selectedBank} <span className="text-emerald-500">Fund Performances</span>
+                                        </h2>
+                                        <div className="flex items-center gap-2 text-xs text-text-secondary mt-0.5">
+                                            <span className="flex items-center gap-1">
+                                                <Info size={13} /> MUFAP Verified Data
+                                            </span>
+                                            {scraperStatus?.last_run_at && (
+                                                <>
+                                                    <span>•</span>
+                                                    <span className="text-emerald-400 font-mono">
+                                                        Last scraped: {formatLastScraped(scraperStatus.last_run_at)}
+                                                    </span>
+                                                </>
+                                            )}
+                                        </div>
+                                    </div>
                                 </div>
-                                <div>
-                                    <h2 className="text-2xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">
-                                        {selectedBank} <span className="text-emerald-500">Fund Performances</span>
-                                    </h2>
-                                    <p className="text-sm text-text-secondary flex items-center gap-1">
-                                        <Info size={14} /> MUFAP Verified Data
-                                    </p>
+
+                                <div className="flex items-center gap-3 pr-10 sm:pr-0">
+                                    <button
+                                        onClick={handleTriggerScraper}
+                                        disabled={isScrapingMufap}
+                                        className="px-4 py-2 rounded-xl text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 transition-all flex items-center gap-2 shadow-md shadow-emerald-900/30 cursor-pointer"
+                                        title="Scrape live daily NAV prices from MUFAP"
+                                    >
+                                        <RefreshCw size={14} className={isScrapingMufap ? "animate-spin" : ""} />
+                                        <span>{isScrapingMufap ? "Scraping MUFAP..." : "Refresh Live NAVs"}</span>
+                                    </button>
                                 </div>
                             </div>
+
 
                             <div className="flex-1 overflow-hidden flex flex-col gap-6">
                                 {/* Search Bar & Filters */}
@@ -1153,12 +1255,21 @@ const Dashboard = () => {
                                                     if (bankPerformanceData.length === 0) {
                                                         return (
                                                             <tr>
-                                                                <td colSpan={6} className="py-8 text-center text-text-secondary">
-                                                                    No daily performance data available for {selectedBank}. This might mean the scraper hasn't run yet or no funds matched.
+                                                                <td colSpan={6} className="py-12 text-center text-text-secondary">
+                                                                    <p className="mb-3">No daily performance data available for {selectedBank}. This might mean the scraper hasn't run yet or no funds matched.</p>
+                                                                    <button
+                                                                        onClick={handleTriggerScraper}
+                                                                        disabled={isScrapingMufap}
+                                                                        className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white rounded-xl text-xs font-semibold transition-all inline-flex items-center gap-2 cursor-pointer shadow-md shadow-emerald-900/30"
+                                                                    >
+                                                                        <RefreshCw size={13} className={isScrapingMufap ? "animate-spin" : ""} />
+                                                                        <span>{isScrapingMufap ? "Scraping MUFAP in background..." : "Trigger MUFAP Scraper Now"}</span>
+                                                                    </button>
                                                                 </td>
                                                             </tr>
                                                         );
                                                     }
+
 
                                                     if (filteredFunds.length === 0) {
                                                         return (
