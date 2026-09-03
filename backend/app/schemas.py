@@ -58,3 +58,28 @@ class Token(BaseModel):
 
 class TokenData(BaseModel):
     username: Optional[str] = None
+
+
+# ─── Data Manager & Manual Entry Schemas ──────────────────────────────────────
+
+class HoldingItemSchema(BaseModel):
+    fund_name: str
+    category: Optional[str] = "Other"
+    market_value: float
+    gain_loss: Optional[float] = 0.0
+    units: Optional[float] = 0.0
+    nav: Optional[float] = 0.0
+    percent_change: Optional[float] = 0.0
+
+class StatementUpdateSchema(BaseModel):
+    date: Optional[str] = None
+    bank: Optional[str] = None
+    account_number: Optional[str] = None
+    holdings: List[HoldingItemSchema]
+
+class ManualStatementCreateSchema(BaseModel):
+    date: str
+    bank: str
+    account_number: Optional[str] = "MANUAL-001"
+    holdings: List[HoldingItemSchema]
+

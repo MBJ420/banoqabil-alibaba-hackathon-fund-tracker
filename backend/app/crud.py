@@ -1,7 +1,10 @@
 import logging
+import json
+import os
 from sqlalchemy.orm import Session
 from . import models, schemas
 from passlib.context import CryptContext
+
 
 logger = logging.getLogger(__name__)
 
@@ -183,4 +186,342 @@ def get_user_statements(db: Session, user_id: int, limit: int = 50) -> list[mode
         .limit(limit)
         .all()
     )
+
+
+# ─── Data Manager & Manual Entry CRUD ──────────────────────────────────────────
+
+def get_detailed_user_statements(db: Session, user_id: int) -> list[dict]:
+    """Returns all statements for a user with fully parsed holdings and metadata."""
+    rows = (
+        db.query(models.Statement, models.Portfolio, models.Bank)
+        .join(models.Portfolio, models.Statement.portfolio_id == models.Portfolio.id)
+        .join(models.Bank, models.Portfolio.bank_id == models.Bank.id)
+        .filter(models.Portfolio.user_id == user_id)
+        .order_by(models.Statement.date.desc(), models.Statement.created_at.desc())
+        .all()
+    )
+
+    statements = []
+    for stmt, port, bank in rows:
+        raw = stmt.raw_data if isinstance(stmt.raw_data, dict) else (json.loads(stmt.raw_data) if stmt.raw_data else {})
+        summary = raw.get("summary", {}) if isinstance(raw.get("summary"), dict) else {}
+        holdings_raw = raw.get("holdings", []) or []
+
+        holdings = []
+        for idx, h in enumerate(holdings_raw):
+            val = float(h.get("market_value", 0.0) or 0.0)
+            gain = float(h.get("gain_loss", 0.0) or 0.0)
+            holdings.append({
+                "index": idx,
+                "fund_name": h.get("fund_name", "Unknown Fund"),
+                "category": h.get("category", "Other"),
+                "market_value": val,
+                "gain_loss": gain,
+                "units": float(h.get("units", 0.0) or 0.0),
+                "nav": float(h.get("nav", 0.0) or 0.0),
+                "percent_change": float(h.get("percent_change", 0.0) or 0.0),
+            })
+
+        is_manual = (stmt.file_path or "").upper() == "MANUAL_ENTRY"
+        tot_val = summary.get("total_market_value", sum(h["market_value"] for h in holdings))
+        tot_gain = summary.get("total_gain_loss", sum(h["gain_loss"] for h in holdings))
+
+        statements.append({
+            "id": stmt.id,
+            "portfolio_id": port.id,
+            "date": stmt.date,
+            "created_at": stmt.created_at.isoformat() if stmt.created_at else None,
+            "bank": bank.name,
+            "account_number": port.account_number,
+            "holder_name": port.holder_name,
+            "file_path": stmt.file_path,
+            "is_manual": is_manual,
+            "summary": {
+                "total_market_value": float(tot_val),
+                "total_gain_loss": float(tot_gain),
+                "total_investment": float(tot_val - tot_gain),
+            },
+            "holdings": holdings,
+            "holdings_count": len(holdings),
+        })
+
+    return statements
+
+
+def get_statement_by_id_and_user(db: Session, statement_id: int, user_id: int) -> models.Statement | None:
+    """Finds a statement by ID ensuring it belongs to the given user."""
+    return (
+        db.query(models.Statement)
+        .join(models.Portfolio, models.Statement.portfolio_id == models.Portfolio.id)
+        .filter(models.Statement.id == statement_id, models.Portfolio.user_id == user_id)
+        .first()
+    )
+
+
+def update_statement_holdings(
+    db: Session,
+    statement_id: int,
+    user_id: int,
+    payload: schemas.StatementUpdateSchema
+) -> dict:
+    """
+    Updates an existing statement: date, institution/bank, account number,
+    and replaces holdings in raw_data, automatically recomputing total valuation and gain/loss.
+    """
+    stmt = get_statement_by_id_and_user(db, statement_id, user_id)
+    if not stmt:
+        return {"error": "Statement not found or does not belong to current user."}
+
+    port = stmt.portfolio
+    if payload.bank and payload.bank.strip():
+        bank = get_or_create_bank(db, payload.bank.strip())
+        port.bank_id = bank.id
+
+    if payload.account_number and payload.account_number.strip():
+        port.account_number = payload.account_number.strip()
+
+    if payload.date and payload.date.strip():
+        stmt.date = payload.date.strip()
+
+    # Reconstruct holdings and recalculate summary totals
+    new_holdings = []
+    tot_market_value = 0.0
+    tot_gain_loss = 0.0
+
+    for h in payload.holdings:
+        mv = float(h.market_value)
+        gl = float(h.gain_loss or 0.0)
+        tot_market_value += mv
+        tot_gain_loss += gl
+        pct = round((gl / (mv - gl) * 100), 2) if (mv - gl) > 0 else 0.0
+
+        new_holdings.append({
+            "fund_name": h.fund_name.strip(),
+            "category": h.category.strip() if h.category else "Other",
+            "market_value": mv,
+            "gain_loss": gl,
+            "units": float(h.units or 0.0),
+            "nav": float(h.nav or 0.0),
+            "percent_change": pct,
+        })
+
+    raw = stmt.raw_data if isinstance(stmt.raw_data, dict) else (json.loads(stmt.raw_data) if stmt.raw_data else {})
+    raw["statement_date"] = stmt.date
+    raw["statement_month"] = stmt.date[:7] if len(stmt.date) >= 7 else ""
+    raw["holdings"] = new_holdings
+    raw["summary"] = {
+        "total_market_value": round(tot_market_value, 2),
+        "total_gain_loss": round(tot_gain_loss, 2),
+    }
+
+    from sqlalchemy.orm.attributes import flag_modified
+    stmt.raw_data = dict(raw)
+    flag_modified(stmt, "raw_data")
+
+    db.commit()
+    db.refresh(stmt)
+    db.refresh(port)
+
+    return {
+        "status": "success",
+        "message": "Statement updated successfully.",
+        "statement_id": stmt.id,
+        "holdings_count": len(new_holdings),
+        "total_market_value": round(tot_market_value, 2),
+    }
+
+
+def delete_statement_holding(
+    db: Session,
+    statement_id: int,
+    user_id: int,
+    holding_index: int
+) -> dict:
+    """Removes a single holding from a statement's raw_data and recalculates summary totals."""
+    stmt = get_statement_by_id_and_user(db, statement_id, user_id)
+    if not stmt:
+        return {"error": "Statement not found."}
+
+    raw = stmt.raw_data if isinstance(stmt.raw_data, dict) else (json.loads(stmt.raw_data) if stmt.raw_data else {})
+    holdings = list(raw.get("holdings", []))
+
+    if holding_index < 0 or holding_index >= len(holdings):
+        return {"error": f"Invalid holding index {holding_index}. Statement has {len(holdings)} holdings."}
+
+    removed = holdings.pop(holding_index)
+
+    tot_market_value = sum(float(h.get("market_value", 0.0) or 0.0) for h in holdings)
+    tot_gain_loss = sum(float(h.get("gain_loss", 0.0) or 0.0) for h in holdings)
+
+    raw["holdings"] = holdings
+    raw["summary"] = {
+        "total_market_value": round(tot_market_value, 2),
+        "total_gain_loss": round(tot_gain_loss, 2),
+    }
+
+    from sqlalchemy.orm.attributes import flag_modified
+    stmt.raw_data = dict(raw)
+    flag_modified(stmt, "raw_data")
+
+    db.commit()
+    db.refresh(stmt)
+
+    return {
+        "status": "success",
+        "message": f"Removed '{removed.get('fund_name', 'holding')}' successfully.",
+        "remaining_holdings": len(holdings),
+        "total_market_value": round(tot_market_value, 2),
+    }
+
+
+def create_manual_statement(
+    db: Session,
+    user_id: int,
+    payload: schemas.ManualStatementCreateSchema
+) -> dict:
+    """
+    Creates a new manual statement record in the database, allowing users
+    to record months/holdings without requiring a PDF file.
+    """
+    bank_name = (payload.bank or "").strip()
+    if not bank_name:
+        return {"error": "Institution/Bank name is required."}
+
+    date_str = (payload.date or "").strip()
+    if not date_str:
+        return {"error": "Statement date is required (YYYY-MM-DD)."}
+
+    bank = get_or_create_bank(db, bank_name)
+    account_number = (payload.account_number or "MANUAL-001").strip()
+
+    # Find or create portfolio for user + bank + account_number
+    portfolio = db.query(models.Portfolio).filter(
+        models.Portfolio.user_id == user_id,
+        models.Portfolio.bank_id == bank.id,
+        models.Portfolio.account_number == account_number
+    ).first()
+
+    if not portfolio:
+        user = db.query(models.User).filter(models.User.id == user_id).first()
+        holder_name = user.username if user else "Investor"
+        portfolio = models.Portfolio(
+            user_id=user_id,
+            bank_id=bank.id,
+            account_number=account_number,
+            holder_name=holder_name
+        )
+        db.add(portfolio)
+        db.commit()
+        db.refresh(portfolio)
+
+    # Reconstruct holdings & summary
+    holdings = []
+    tot_market_value = 0.0
+    tot_gain_loss = 0.0
+
+    for h in payload.holdings:
+        mv = float(h.market_value)
+        gl = float(h.gain_loss or 0.0)
+        tot_market_value += mv
+        tot_gain_loss += gl
+        pct = round((gl / (mv - gl) * 100), 2) if (mv - gl) > 0 else 0.0
+
+        holdings.append({
+            "fund_name": h.fund_name.strip(),
+            "category": h.category.strip() if h.category else "Other",
+            "market_value": mv,
+            "gain_loss": gl,
+            "units": float(h.units or 0.0),
+            "nav": float(h.nav or 0.0),
+            "percent_change": pct,
+        })
+
+    raw_data = {
+        "bank": bank.name,
+        "portfolio_id": account_number,
+        "account_name": portfolio.holder_name,
+        "statement_date": date_str,
+        "statement_month": date_str[:7] if len(date_str) >= 7 else "",
+        "holdings": holdings,
+        "summary": {
+            "total_market_value": round(tot_market_value, 2),
+            "total_gain_loss": round(tot_gain_loss, 2),
+        }
+    }
+
+    # Check if a statement already exists on this exact date for this portfolio
+    existing = db.query(models.Statement).filter(
+        models.Statement.portfolio_id == portfolio.id,
+        models.Statement.date == date_str
+    ).first()
+
+    if existing:
+        from sqlalchemy.orm.attributes import flag_modified
+        existing.raw_data = raw_data
+        flag_modified(existing, "raw_data")
+        db.commit()
+        db.refresh(existing)
+        return {
+            "status": "updated",
+            "message": f"Updated existing manual entry for date {date_str}.",
+            "statement_id": existing.id,
+            "total_market_value": round(tot_market_value, 2),
+        }
+
+    stmt = models.Statement(
+        portfolio_id=portfolio.id,
+        date=date_str,
+        file_path="MANUAL_ENTRY",
+        raw_data=raw_data
+    )
+    db.add(stmt)
+    db.commit()
+    db.refresh(stmt)
+
+    return {
+        "status": "success",
+        "message": f"Manual statement created for {date_str}.",
+        "statement_id": stmt.id,
+        "total_market_value": round(tot_market_value, 2),
+    }
+
+
+def delete_user_statement_with_file_option(
+    db: Session,
+    statement_id: int,
+    user_id: int,
+    delete_file: bool = False
+) -> dict:
+    """
+    Deletes a statement from the database. If delete_file is True, also safely removes
+    the source PDF file on disk so the folder watcher does not re-detect it.
+    """
+    stmt = get_statement_by_id_and_user(db, statement_id, user_id)
+    if not stmt:
+        return {"error": "Statement not found."}
+
+    file_removed = False
+    if delete_file and stmt.file_path and stmt.file_path.upper() != "MANUAL_ENTRY":
+        try:
+            if os.path.exists(stmt.file_path):
+                os.remove(stmt.file_path)
+                file_removed = True
+                logger.info(f"Removed physical PDF statement on user deletion: {stmt.file_path}")
+        except Exception as e:
+            logger.warning(f"Could not delete physical statement file {stmt.file_path}: {e}")
+
+    portfolio_id = stmt.portfolio_id
+    db.delete(stmt)
+    db.commit()
+
+    # If the portfolio now has 0 statements and was a manual entry portfolio, keep or clean
+    remaining = db.query(models.Statement).filter(models.Statement.portfolio_id == portfolio_id).count()
+
+    return {
+        "status": "success",
+        "message": "Statement deleted successfully.",
+        "file_removed": file_removed,
+        "remaining_for_portfolio": remaining,
+    }
+
 

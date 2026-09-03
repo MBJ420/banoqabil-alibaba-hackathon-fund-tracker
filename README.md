@@ -367,7 +367,7 @@ docs: add setup steps for Mac users
 
 A **merge conflict** happens when two people edit the exact same line in the same file. To avoid this:
 
-1. **Split ownership of files** — if Jameel owns `Dashboard.tsx`, Ali should not touch it. Ali works on `News.tsx`, Sara works on `AINews.tsx`.
+1. **Split ownership of files** — if MBJ owns `Dashboard.tsx`, Ahmed should not touch it. Ahmed works on `News.tsx`, Aaisha works on `AINews.tsx`.
 2. **Pull from main every morning** — `git pull origin main` — stay in sync
 3. **Commit small and often** — 5 small commits are much safer than 1 huge commit
 

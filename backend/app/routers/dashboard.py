@@ -730,26 +730,18 @@ def get_statement_history(
 @router.delete("/statements/{statement_id}")
 def delete_statement(
     statement_id: int,
+    delete_file: bool = False,
     current_user: schemas.User = Depends(utils.get_current_user),
     db: Session = Depends(database.get_db)
 ):
     """
-    Deletes a specific statement.
+    Deletes a specific statement with optional physical file cleanup from disk.
     """
-    stmt = db.query(models.Statement).join(
-        models.Portfolio
-    ).filter(
-        models.Statement.id == statement_id,
-        models.Portfolio.user_id == current_user.id
-    ).first()
-    
-    if not stmt:
-        from fastapi import HTTPException
-        raise HTTPException(status_code=404, detail="Statement not found")
-        
-    db.delete(stmt)
-    db.commit()
-    return {"message": "Statement deleted successfully"}
+    result = crud.delete_user_statement_with_file_option(db, statement_id, current_user.id, delete_file=delete_file)
+    if "error" in result:
+        raise HTTPException(status_code=404, detail=result["error"])
+    return result
+
 
 
 # ─── POST /dashboard/ai-diagnostic ───────────────────────────────────────────

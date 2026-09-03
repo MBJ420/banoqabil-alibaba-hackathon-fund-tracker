@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import client from '../api/client';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
@@ -6,8 +6,10 @@ import ReactApexChart from 'react-apexcharts';
 import type { ApexOptions } from 'apexcharts';
 import { LogOut, LayoutDashboard, Database, TrendingUp, Zap, ArrowUpRight, Activity, Menu, Building2, Download, FileText, Sun, Moon, Calculator, Info, Search, UploadCloud, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Filter, Newspaper, Brain, Lightbulb, X, Eye, EyeOff, PiggyBank, Receipt, LineChart, HelpCircle } from 'lucide-react';
 import StatementUploadModal from '../components/StatementUploadModal';
+import PortfolioDataManagerModal from '../components/PortfolioDataManagerModal';
 import { useToast } from '../components/Toast';
 import FeatureInfoModal, { type FeatureGuideContent } from '../components/FeatureInfoModal';
+
 
 const DASHBOARD_GUIDE: FeatureGuideContent = {
   title: 'Global Portfolio Dashboard',
@@ -103,6 +105,7 @@ const Dashboard = () => {
     const [isDashboardInfoOpen, setIsDashboardInfoOpen] = useState(false);
     const [statements, setStatements] = useState<any[]>([]);
     const [isStatementHistoryModalOpen, setIsStatementHistoryModalOpen] = useState(false);
+    const [isDataManagerOpen, setIsDataManagerOpen] = useState(false);
 
     useEffect(() => {
         const root = window.document.documentElement;
@@ -124,77 +127,79 @@ const Dashboard = () => {
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
-    useEffect(() => {
-        const fetchData = async () => {
-            // Only fetch portfolio data while the dashboard home route is active.
-            // Subpages render via React Router <Outlet />, so we must not fire
-            // these calls (or surface their errors) when a subpage is mounted.
-            if (currentPage !== '/') return;
-            try {
-                // Add a generous timeout so a slow (but alive) backend doesn't crash the dashboard
-                const timeoutPromise = new Promise((_, reject) =>
-                    setTimeout(() => reject(new Error("Request timed out. The server may be busy — try again.")), 30000)
-                );
+    const fetchData = useCallback(async () => {
+        // Only fetch portfolio data while the dashboard home route is active.
+        // Subpages render via React Router <Outlet />, so we must not fire
+        // these calls (or surface their errors) when a subpage is mounted.
+        if (currentPage !== '/') return;
+        try {
+            // Add a generous timeout so a slow (but alive) backend doesn't crash the dashboard
+            const timeoutPromise = new Promise((_, reject) =>
+                setTimeout(() => reject(new Error("Request timed out. The server may be busy — try again.")), 30000)
+            );
 
-                const params = new URLSearchParams();
-                if (selectedBank) params.append('bank', selectedBank);
-                if (selectedPortfolio) params.append('portfolio_account', selectedPortfolio);
-                const q = params.toString() ? `?${params.toString()}` : '';
+            const params = new URLSearchParams();
+            if (selectedBank) params.append('bank', selectedBank);
+            if (selectedPortfolio) params.append('portfolio_account', selectedPortfolio);
+            const q = params.toString() ? `?${params.toString()}` : '';
 
-                const advancedParams = new URLSearchParams(params);
-                if (timeRange) advancedParams.append('days', timeRange.toString());
-                const advancedQ = advancedParams.toString() ? `?${advancedParams.toString()}` : '';
+            const advancedParams = new URLSearchParams(params);
+            if (timeRange) advancedParams.append('days', timeRange.toString());
+            const advancedQ = advancedParams.toString() ? `?${advancedParams.toString()}` : '';
 
-                const summaryReq = client.get(`/dashboard/summary${q}`);
-                const allocReq = client.get(`/dashboard/allocation${advancedQ}`);
-                const perfReq = client.get(`/dashboard/performance${advancedQ}`);
-                const holdingsReq = client.get(`/dashboard/holdings${q}`);
-                const statementsReq = client.get(`/dashboard/statement-history${q}`);
+            const summaryReq = client.get(`/dashboard/summary${q}`);
+            const allocReq = client.get(`/dashboard/allocation${advancedQ}`);
+            const perfReq = client.get(`/dashboard/performance${advancedQ}`);
+            const holdingsReq = client.get(`/dashboard/holdings${q}`);
+            const statementsReq = client.get(`/dashboard/statement-history${q}`);
 
-                const requests = [summaryReq, allocReq, perfReq, holdingsReq, statementsReq];
+            const requests = [summaryReq, allocReq, perfReq, holdingsReq, statementsReq];
 
-                if (selectedBank) {
-                    requests.push(client.get(`/api/performance/bank/${selectedBank}`).catch(() => ({ data: [] })) as any);
-                }
-
-                const responses = await Promise.race([
-                    Promise.all(requests),
-                    timeoutPromise
-                ]) as any;
-
-                const [summaryRes, allocRes, perfRes, holdingsRes, statementsRes, bankPerfRes] = responses;
-
-                setSummary(summaryRes.data);
-                setHoldings(holdingsRes.data);
-                setStatements(statementsRes.data);
-
-                const pieData = allocRes.data.dates.map((name: string, index: number) => ({
-                    name, value: allocRes.data.values[index]
-                }));
-                setAllocation(pieData);
-
-                const lineData = perfRes.data.dates.map((date: string, index: number) => ({
-                    date, value: perfRes.data.values[index]
-                }));
-                setPerformance(lineData);
-
-                if (bankPerfRes && bankPerfRes.data) {
-                    setBankPerformanceData(bankPerfRes.data);
-                } else {
-                    setBankPerformanceData([]);
-                }
-
-            } catch (err: any) {
-                console.error("Dashboard fetch error:", err);
-                if (err.response?.status === 401) {
-                    navigate('/login');
-                } else {
-                    setError(err.message || "Failed to load dashboard data. Ensure backend is running.");
-                }
+            if (selectedBank) {
+                requests.push(client.get(`/api/performance/bank/${selectedBank}`).catch(() => ({ data: [] })) as any);
             }
-        };
+
+            const responses = await Promise.race([
+                Promise.all(requests),
+                timeoutPromise
+            ]) as any;
+
+            const [summaryRes, allocRes, perfRes, holdingsRes, statementsRes, bankPerfRes] = responses;
+
+            setSummary(summaryRes.data);
+            setHoldings(holdingsRes.data);
+            setStatements(statementsRes.data);
+
+            const pieData = allocRes.data.dates.map((name: string, index: number) => ({
+                name, value: allocRes.data.values[index]
+            }));
+            setAllocation(pieData);
+
+            const lineData = perfRes.data.dates.map((date: string, index: number) => ({
+                date, value: perfRes.data.values[index]
+            }));
+            setPerformance(lineData);
+
+            if (bankPerfRes && bankPerfRes.data) {
+                setBankPerformanceData(bankPerfRes.data);
+            } else {
+                setBankPerformanceData([]);
+            }
+
+        } catch (err: any) {
+            console.error("Dashboard fetch error:", err);
+            if (err.response?.status === 401) {
+                navigate('/login');
+            } else {
+                setError(err.message || "Failed to load dashboard data. Ensure backend is running.");
+            }
+        }
+    }, [currentPage, navigate, selectedBank, selectedPortfolio, timeRange]);
+
+    useEffect(() => {
         fetchData();
-    }, [navigate, selectedBank, timeRange, selectedPortfolio, currentPage]);
+    }, [fetchData]);
+
 
     // Fetch bank PDF password configs on mount
     useEffect(() => {
@@ -404,11 +409,19 @@ const Dashboard = () => {
                         <NavItem
                             icon={<LayoutDashboard size={20} />}
                             label="Global Portfolio"
-                            active={selectedBank === null && currentPage === '/'}
+                            active={selectedBank === null && currentPage === '/' && !isDataManagerOpen}
                             isOpen={isSidebarOpen}
-                            onClick={() => { setSelectedBank(null); navigate('/'); }}
+                            onClick={() => { setSelectedBank(null); setIsDataManagerOpen(false); navigate('/'); }}
+                        />
+                        <NavItem
+                            icon={<Database size={20} />}
+                            label="Data Ledger"
+                            active={isDataManagerOpen}
+                            isOpen={isSidebarOpen}
+                            onClick={() => setIsDataManagerOpen(true)}
                         />
                     </div>
+
 
                     <div className="mb-6">
                         <p className={`text-[10px] font-semibold text-text-secondary mb-2 px-3 tracking-wider ${!isSidebarOpen ? 'hidden' : 'block'}`}>INSTITUTIONS</p>
@@ -893,11 +906,12 @@ const Dashboard = () => {
                                         Recent Portfolio Updates
                                     </h3>
                                     <button 
-                                        onClick={() => setIsStatementHistoryModalOpen(true)}
-                                        className="text-xs font-semibold text-emerald-500 hover:text-emerald-400 transition-colors uppercase tracking-widest"
+                                        onClick={() => setIsDataManagerOpen(true)}
+                                        className="text-xs font-semibold text-emerald-500 hover:text-emerald-400 transition-colors uppercase tracking-widest flex items-center gap-1.5"
                                     >
-                                        View All History
+                                        <span>Manage Ledger & History</span>
                                     </button>
+
                                 </div>
                                 <div className="overflow-x-auto">
                                     <table className="w-full text-left">
@@ -965,73 +979,13 @@ const Dashboard = () => {
                     </div>
                 </div>
 
-                {/* Statement History Modal */}
-                {isStatementHistoryModalOpen && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-                        <div className="bg-surface border border-[var(--color-white-10)] rounded-3xl p-8 max-w-4xl w-full shadow-2xl relative max-h-[85vh] flex flex-col">
-                            <button
-                                onClick={() => setIsStatementHistoryModalOpen(false)}
-                                className="absolute top-4 right-4 p-2 text-text-secondary hover:text-white bg-[var(--color-white-5)] hover:bg-[var(--color-white-10)] rounded-full transition-colors"
-                            >
-                                <Zap size={16} className="rotate-45" /> {/* Close Icon Approximation */}
-                            </button>
+                {/* Full Database Portfolio Data Manager Modal */}
+                <PortfolioDataManagerModal
+                    isOpen={isDataManagerOpen}
+                    onClose={() => setIsDataManagerOpen(false)}
+                    onDataChanged={fetchData}
+                />
 
-                            <div className="flex items-center gap-3 mb-6 shrink-0">
-                                <div className="p-3 bg-emerald-500/20 text-emerald-500 rounded-2xl">
-                                    <Activity size={28} />
-                                </div>
-                                <div>
-                                    <h2 className="text-2xl font-bold text-text-primary">Statement History Ledger</h2>
-                                    <p className="text-sm text-text-secondary">View and manage all processed portfolio statements.</p>
-                                </div>
-                            </div>
-
-                            <div className="overflow-y-auto flex-1 pr-2 custom-scrollbar">
-                                <table className="w-full text-left">
-                                    <thead className="sticky top-0 bg-surface z-10">
-                                        <tr className="bg-[var(--color-white-5)] text-[10px] uppercase tracking-widest text-text-secondary font-bold">
-                                            <th className="px-6 py-4">Date</th>
-                                            <th className="px-6 py-4">Institution</th>
-                                            <th className="px-6 py-4">Account Number</th>
-                                            <th className="px-6 py-4">Action</th>
-                                            <th className="px-6 py-4 text-right">Valuation (PKR)</th>
-                                            <th className="px-6 py-4 text-center">Manage</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-[var(--color-white-5)]">
-                                        {statements.length === 0 ? (
-                                            <tr>
-                                                <td colSpan={6} className="px-6 py-8 text-center text-text-secondary">
-                                                    No statements found.
-                                                </td>
-                                            </tr>
-                                        ) : (
-                                            statements.map((row, i) => (
-                                                <tr key={i} className="hover:bg-[var(--color-white-2)] transition-colors group">
-                                                    <td className="px-6 py-4 text-xs font-mono text-text-secondary">{row.date}</td>
-                                                    <td className="px-6 py-4 text-sm font-semibold text-text-primary">{row.bank}</td>
-                                                    <td className="px-6 py-4 text-sm font-mono text-text-secondary">{row.account_number}</td>
-                                                    <td className="px-6 py-4 text-sm text-text-secondary">{row.action}</td>
-                                                    <td className="px-6 py-4 text-right font-mono text-sm font-bold text-text-primary">
-                                                        {formatCurrency(row.amount)}
-                                                    </td>
-                                                    <td className="px-6 py-4 text-center flex justify-center gap-2">
-                                                        <button 
-                                                            className="text-xs bg-red-500/10 text-red-500 hover:bg-red-500/20 px-3 py-1.5 rounded transition-colors"
-                                                            onClick={() => handleDeleteStatement(row.id)}
-                                                        >
-                                                            Delete
-                                                        </button>
-                                                    </td>
-                                                </tr>
-                                            ))
-                                        )}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                )}
 
                 {/* Calculator Modal Overlay */}
                 {isCalculatorModalOpen && (
