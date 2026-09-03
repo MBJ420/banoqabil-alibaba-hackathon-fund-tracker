@@ -107,7 +107,19 @@ def save_statement(db: Session, user_id: int, parsed_data: dict, file_path: str)
                     p.holder_name = account_name
             db.commit()
         
-    # Check for duplicate statement on exact date
+    # Check if this exact physical PDF file was already parsed previously
+    if file_path and file_path != "MANUAL_ENTRY":
+        existing_by_file = db.query(models.Statement).filter(
+            models.Statement.file_path == file_path
+        ).first()
+        if existing_by_file:
+            existing_by_file.portfolio_id = portfolio.id
+            existing_by_file.date = date
+            existing_by_file.raw_data = parsed_data
+            db.commit()
+            return {"status": "updated", "message": f"Statement updated for file {file_path}", "statement_id": existing_by_file.id}
+
+    # Check for duplicate statement on exact date in this portfolio
     existing_statement = db.query(models.Statement).filter(
         models.Statement.portfolio_id == portfolio.id,
         models.Statement.date == date
@@ -116,8 +128,10 @@ def save_statement(db: Session, user_id: int, parsed_data: dict, file_path: str)
     if existing_statement:
         # Update rather than skip, so parser logic changes can heal old entries
         existing_statement.raw_data = parsed_data
+        existing_statement.file_path = file_path
         db.commit()
         return {"status": "updated", "message": f"Statement updated for date {date}", "statement_id": existing_statement.id}
+
         
     statement = models.Statement(
         portfolio_id=portfolio.id,
