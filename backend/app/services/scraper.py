@@ -201,6 +201,7 @@ def scrape_mufap_data():
                 # Store extracted record
                 extracted_records.append({
                     "name": fund_name.lower().strip(),
+                    "raw_name": fund_name.strip(),
                     "nav": nav_str,
                     "cat": "",
                     "1_day": cols[headers.index('1 Day')].strip() if '1 Day' in headers else None,
@@ -209,6 +210,7 @@ def scrape_mufap_data():
                     "365_days": cols[headers.index('365 Days')].strip() if '365 Days' in headers else None,
                     "ytd": cols[headers.index('YTD')].strip() if 'YTD' in headers else None,
                 })
+
 
             # Process VPS Text using robust card separation
             if vps_text:
@@ -276,8 +278,36 @@ def scrape_mufap_data():
                             mapped_fund_id = db_fund_id
                             break
                 
+                # If not mapped yet, check if this is a newly launched fund from our target institutions
+                if not mapped_fund_id:
+
+                    r_name = row["name"]
+                    target_bank_name = None
+                    if "meezan" in r_name or "al meezan" in r_name or "mtpf" in r_name:
+                        target_bank_name = "Meezan"
+                    elif "hbl" in r_name:
+                        target_bank_name = "HBL"
+                    elif "atlas" in r_name:
+                        target_bank_name = "Atlas"
+                    elif "faysal" in r_name:
+                        target_bank_name = "Faysal"
+
+                    if target_bank_name:
+                        from app.models import Bank
+                        bank_rec = db.query(Bank).filter(Bank.name.ilike(target_bank_name)).first()
+                        if bank_rec:
+                            display_title = row.get("raw_name") or row["name"].title()
+                            new_f = Fund(name=display_title, bank_id=bank_rec.id, is_active=True)
+                            db.add(new_f)
+                            db.commit()
+                            db.refresh(new_f)
+                            mapped_fund_id = new_f.id
+                            tracked_funds[new_f.name.lower()] = new_f.id
+                            logger.info(f"Auto-registered newly launched mutual fund: {display_title} under {target_bank_name}")
+
                 if mapped_fund_id:
                     try:
+
                         nav_price = float(row['nav'].replace(',', ''))
                         
                         yesterday_entry = db.query(FundNAVHistory).filter(
