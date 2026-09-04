@@ -4,12 +4,24 @@ import client from '../api/client';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import ReactApexChart from 'react-apexcharts';
 import type { ApexOptions } from 'apexcharts';
-import { LogOut, LayoutDashboard, Database, TrendingUp, Zap, ArrowUpRight, Activity, Menu, Building2, Download, FileText, Sun, Moon, Calculator, Info, Search, UploadCloud, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Filter, Newspaper, Brain, Lightbulb, X, Eye, EyeOff, PiggyBank, Receipt, LineChart, HelpCircle, RefreshCw } from 'lucide-react';
+import { LogOut, LayoutDashboard, Database, TrendingUp, Zap, ArrowUpRight, Activity, Menu, Download, FileText, Sun, Moon, Calculator, Info, Search, UploadCloud, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Filter, Newspaper, Brain, Lightbulb, X, Eye, EyeOff, PiggyBank, Receipt, LineChart, HelpCircle, RefreshCw } from 'lucide-react';
 
 import StatementUploadModal from '../components/StatementUploadModal';
 import PortfolioDataManagerModal from '../components/PortfolioDataManagerModal';
 import { useToast } from '../components/Toast';
 import FeatureInfoModal, { type FeatureGuideContent } from '../components/FeatureInfoModal';
+
+import meezanLogo from '../assets/logos/meezan.png';
+import hblLogo from '../assets/logos/HBL.png';
+import atlasLogo from '../assets/logos/Atlas.jpg';
+import faysalLogo from '../assets/logos/FaysalFunds.jpg';
+import fundTrackerIcon from '../assets/fund_tracker_icon.png';
+
+const BankLogo = ({ src, alt }: { src: string; alt: string }) => (
+    <div className="w-7 h-7 rounded-lg bg-white p-0.5 flex items-center justify-center shrink-0 shadow-md border border-white/30 transition-transform duration-200 group-hover:scale-105">
+        <img src={src} alt={alt} className="w-full h-full object-contain rounded-md" />
+    </div>
+);
 
 
 const DASHBOARD_GUIDE: FeatureGuideContent = {
@@ -108,7 +120,6 @@ const Dashboard = () => {
     const [isCalculatorModalOpen, setIsCalculatorModalOpen] = useState(false);
     const [isDashboardInfoOpen, setIsDashboardInfoOpen] = useState(false);
     const [statements, setStatements] = useState<any[]>([]);
-    const [isStatementHistoryModalOpen, setIsStatementHistoryModalOpen] = useState(false);
     const [isDataManagerOpen, setIsDataManagerOpen] = useState(false);
 
     useEffect(() => {
@@ -122,14 +133,28 @@ const Dashboard = () => {
     }, [theme]);
 
     useEffect(() => {
+        if (window.innerWidth < 1024) setIsSidebarOpen(false);
+        let prevWidth = window.innerWidth;
         const handleResize = () => {
-            if (window.innerWidth < 1024) setIsSidebarOpen(false);
-            else setIsSidebarOpen(true);
+            const currentWidth = window.innerWidth;
+            if (prevWidth >= 1024 && currentWidth < 1024) {
+                setIsSidebarOpen(false);
+            } else if (prevWidth < 1024 && currentWidth >= 1024) {
+                setIsSidebarOpen(true);
+            }
+            prevWidth = currentWidth;
         };
         window.addEventListener('resize', handleResize);
-        handleResize();
         return () => window.removeEventListener('resize', handleResize);
     }, []);
+
+    useEffect(() => {
+        // Trigger resize event after sidebar transition (300ms) so ApexCharts recalculates its SVG bounding box
+        const timer = setTimeout(() => {
+            window.dispatchEvent(new Event('resize'));
+        }, 320);
+        return () => clearTimeout(timer);
+    }, [isSidebarOpen]);
 
     const fetchData = useCallback(async () => {
         // Only fetch portfolio data while the dashboard home route is active.
@@ -171,6 +196,11 @@ const Dashboard = () => {
             const [summaryRes, allocRes, perfRes, holdingsRes, statementsRes, bankPerfRes] = responses;
 
             setSummary(summaryRes.data);
+            if (summaryRes.data?.available_portfolios) {
+                if (selectedPortfolio && !summaryRes.data.available_portfolios.includes(selectedPortfolio)) {
+                    setSelectedPortfolio(null);
+                }
+            }
             setHoldings(holdingsRes.data);
             setStatements(statementsRes.data);
 
@@ -288,16 +318,6 @@ const Dashboard = () => {
         navigate('/login');
     };
 
-    const handleDeleteStatement = async (id: number) => {
-        if (!window.confirm('Are you sure you want to delete this statement?')) return;
-        try {
-            await client.delete(`/dashboard/statements/${id}`);
-            setStatements(statements.filter(s => s.id !== id));
-        } catch (err: any) {
-            alert("Failed to delete statement: " + (err.response?.data?.detail || err.message));
-        }
-    };
-
     const handleFMRUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (!e.target.files || e.target.files.length === 0) return;
         const file = e.target.files[0];
@@ -367,19 +387,26 @@ const Dashboard = () => {
         let csv = headers.join(",") + "\n";
 
         holdings.forEach(h => {
+            const units = Number(h.units || 0);
+            const marketValue = Number(h.market_value || 0);
+            const rawInvested = Number(h.investment_amount || 0);
+            // Current active investment cannot be negative. If units or market value is 0, invested is 0.
+            const investedAmount = (units <= 0 || marketValue <= 0) ? 0 : Math.max(0, rawInvested);
+
             const row = [
                 `"${h.bank}"`,
                 `"${h.portfolio_account || 'Unknown'}"`,
                 `"${h.category}"`,
                 h.units,
                 h.nav,
-                h.investment_amount,
+                investedAmount,
                 h.market_value,
                 h.gain_loss,
                 h.percentage_change.toFixed(2) + "%"
             ];
             csv += row.join(",") + "\n";
         });
+
 
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a");
@@ -457,10 +484,10 @@ const Dashboard = () => {
                 fixed lg:static inset-y-0 left-0 bg-surface border-r border-[var(--color-white-5)] flex flex-col transition-all duration-300 ease-in-out z-30
                 ${isSidebarOpen ? 'w-64 translate-x-0' : '-translate-x-full lg:translate-x-0 lg:w-20'}
             `}>
-                <div className="p-4 flex items-center justify-between border-b border-[var(--color-white-5)] shrink-0">
-                    <div className="flex items-center gap-3 overflow-hidden">
-                        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-gold to-amber-600 flex items-center justify-center shadow-lg shadow-gold/20 shrink-0">
-                            <Activity className="text-white w-5 h-5" />
+                <div className={`flex items-center border-b border-[var(--color-white-5)] shrink-0 transition-all ${isSidebarOpen ? 'p-4 justify-between' : 'px-2.5 py-4 justify-between gap-1.5'}`}>
+                    <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center shadow-lg shadow-emerald-500/20 shrink-0 border border-emerald-500/30 bg-[#071322]">
+                            <img src={fundTrackerIcon} alt="FundTracker" className="w-full h-full object-cover" />
                         </div>
                         {isSidebarOpen && (
                             <div className="transition-opacity duration-300 whitespace-nowrap overflow-hidden">
@@ -473,10 +500,10 @@ const Dashboard = () => {
                     </div>
                     <button
                         onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                        className="p-1.5 rounded-lg bg-[var(--color-white-5)] hover:bg-[var(--color-white-10)] text-text-secondary hover:text-white transition-colors"
+                        className={`rounded-lg bg-[var(--color-white-5)] hover:bg-[var(--color-white-10)] text-text-secondary hover:text-white transition-colors shrink-0 ${isSidebarOpen ? 'p-1.5' : 'p-1'}`}
                         title={isSidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
                     >
-                        {isSidebarOpen ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
+                        {isSidebarOpen ? <ChevronLeft size={16} /> : <ChevronRight size={14} />}
                     </button>
                 </div>
 
@@ -502,10 +529,10 @@ const Dashboard = () => {
 
                     <div className="mb-6">
                         <p className={`text-[10px] font-semibold text-text-secondary mb-2 px-3 tracking-wider ${!isSidebarOpen ? 'hidden' : 'block'}`}>INSTITUTIONS</p>
-                        <NavItem icon={<Building2 size={20} />} label="Meezan Bank" active={selectedBank === 'Meezan' && currentPage === '/'} isOpen={isSidebarOpen} onClick={() => { setSelectedBank('Meezan'); navigate('/'); }} />
-                        <NavItem icon={<Building2 size={20} />} label="HBL" active={selectedBank === 'HBL' && currentPage === '/'} isOpen={isSidebarOpen} onClick={() => { setSelectedBank('HBL'); navigate('/'); }} />
-                        <NavItem icon={<Building2 size={20} />} label="Atlas Funds" active={selectedBank === 'Atlas' && currentPage === '/'} isOpen={isSidebarOpen} onClick={() => { setSelectedBank('Atlas'); navigate('/'); }} />
-                        <NavItem icon={<Building2 size={20} />} label="Faysal Funds" active={selectedBank === 'Faysal' && currentPage === '/'} isOpen={isSidebarOpen} onClick={() => { setSelectedBank('Faysal'); navigate('/'); }} />
+                        <NavItem icon={<BankLogo src={meezanLogo} alt="Meezan Bank" />} label="Meezan Bank" active={selectedBank === 'Meezan' && currentPage === '/'} isOpen={isSidebarOpen} onClick={() => { setSelectedBank('Meezan'); navigate('/'); }} />
+                        <NavItem icon={<BankLogo src={hblLogo} alt="HBL" />} label="HBL" active={selectedBank === 'HBL' && currentPage === '/'} isOpen={isSidebarOpen} onClick={() => { setSelectedBank('HBL'); navigate('/'); }} />
+                        <NavItem icon={<BankLogo src={atlasLogo} alt="Atlas Funds" />} label="Atlas Funds" active={selectedBank === 'Atlas' && currentPage === '/'} isOpen={isSidebarOpen} onClick={() => { setSelectedBank('Atlas'); navigate('/'); }} />
+                        <NavItem icon={<BankLogo src={faysalLogo} alt="Faysal Funds" />} label="Faysal Funds" active={selectedBank === 'Faysal' && currentPage === '/'} isOpen={isSidebarOpen} onClick={() => { setSelectedBank('Faysal'); navigate('/'); }} />
                     </div>
 
                     {/* NEWS Section */}
@@ -715,74 +742,68 @@ const Dashboard = () => {
                             const gain = summary.total_gain_loss || 0;
                             const roi = invested > 0 ? (gain / invested) * 100 : 0;
                             return (
-                            <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-stretch">
                                 {/* Hero Net Worth card */}
-                                <div className="lg:col-span-5 relative overflow-hidden rounded-2xl p-6 bg-gradient-to-br from-emerald-600 to-emerald-800 text-white shadow-xl shadow-emerald-500/20 border border-emerald-400/20 flex flex-col justify-between min-w-0">
+                                <div className="relative overflow-hidden rounded-2xl p-5 bg-gradient-to-br from-emerald-600 to-emerald-800 text-white shadow-xl shadow-emerald-500/20 border border-emerald-400/20 flex flex-col justify-between min-w-0">
                                     <div className="absolute -top-12 -right-12 w-48 h-48 bg-white/10 rounded-full blur-3xl pointer-events-none" />
-                                    <div className="relative flex items-center justify-between mb-3">
+                                    <div className="relative flex items-center justify-between mb-2">
                                         <div className="flex items-center gap-2 text-emerald-50/90">
-                                            <Activity size={18} />
+                                            <Activity size={16} />
                                             <span className="text-xs font-semibold uppercase tracking-wider">Total Net Worth</span>
                                         </div>
-                                        <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/15 text-[10px] font-semibold text-emerald-50">
-                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-300 animate-pulse" /> MUFAP Live
-                                        </span>
                                     </div>
-                                    <p className="relative text-2xl sm:text-3xl xl:text-4xl font-bold font-mono tracking-tight tabular-nums truncate" title={formatPKR(nw)}>
-                                        {formatPKR(nw)}
-                                    </p>
-                                    <div className="relative mt-3 flex flex-wrap items-center gap-3 text-sm">
+                                    <div className="my-1">
+                                        <p className="relative text-lg sm:text-xl xl:text-2xl font-bold font-mono tracking-tight tabular-nums whitespace-nowrap leading-tight" title={formatPKR(nw)}>
+                                            <span className="text-xs sm:text-sm font-sans font-semibold opacity-80 mr-1.5">PKR</span>
+                                            {(nw ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                        </p>
+                                    </div>
+                                    <div className="relative mt-2 flex flex-wrap items-center justify-between gap-1.5 text-xs">
                                         <span
-                                            className="text-emerald-50/90 font-medium cursor-default"
+                                            className="text-emerald-50/90 font-medium cursor-default whitespace-nowrap"
                                             title={`${toCrores(nw)}  •  ${toLacs(nw)}`}
                                         >
                                             ≈ {toCrores(nw)}
                                         </span>
-                                        <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${roi >= 0 ? 'bg-white/15 text-emerald-50' : 'bg-red-500/30 text-red-100'}`}>
+                                        <span className={`px-2 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap ${roi >= 0 ? 'bg-white/15 text-emerald-50' : 'bg-red-500/30 text-red-100'}`}>
                                             {roi >= 0 ? '▲' : '▼'} {Math.abs(roi).toFixed(2)}% ROI
                                         </span>
                                     </div>
                                 </div>
 
-                                {/* 3 Secondary KPI Cards */}
-                                <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                    <KPICard
-                                        title="Total Invested"
-                                        value={formatPKR(invested)}
-                                        subtitle={invested > 0 ? `≈ ${toCrores(invested)}` : undefined}
-                                    />
-                                    <KPICard
-                                        title="Total Gain / Loss"
-                                        value={formatPKR(gain)}
-                                        subtitle={gain !== 0 ? `≈ ${toCrores(gain)}` : undefined}
-                                        tone={gain >= 0 ? 'up' : 'down'}
-                                        badge={gain >= 0 ? 'Profit' : 'Loss'}
-                                    />
-                                    <KPICard
-                                        title="Top Performer"
-                                        value={summary.top_performing_bank || '—'}
-                                        badge="Best ROI"
-                                        subtitle="Leading Asset Manager"
-                                    />
-                                </div>
+                                {/* 2 Secondary KPI Cards */}
+                                <KPICard
+                                    title="Total Invested"
+                                    value={formatPKR(invested)}
+                                    subtitle={invested > 0 ? `≈ ${toCrores(invested)}` : 'Capital Deployed'}
+                                />
+                                <KPICard
+                                    title="Total Gain / Loss"
+                                    value={formatPKR(gain)}
+                                    subtitle={gain !== 0 ? `≈ ${toCrores(gain)}` : undefined}
+                                    tone={gain >= 0 ? 'up' : 'down'}
+                                    badge={gain >= 0 ? 'Profit' : 'Loss'}
+                                />
                             </div>
                             );
                         })()}
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                             {/* Line Chart */}
-                            <div className="lg:col-span-2 bg-surface border border-[var(--color-white-5)] rounded-2xl p-6 relative group flex flex-col">
+                            <div className="lg:col-span-2 bg-surface border border-[var(--color-white-5)] rounded-2xl p-6 relative group flex flex-col overflow-hidden min-w-0">
                                 <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl pointer-events-none" />
                                 <h3 className="text-lg font-bold mb-6 flex items-center gap-2 shrink-0">
                                     <TrendingUp size={20} className="text-emerald-500" />
                                     Portfolio Trajectory
                                 </h3>
-                                <div className="flex-1 w-full min-h-[300px]">
+                                <div className="flex-1 w-full min-h-[300px] min-w-0 overflow-hidden">
                                     {performance && performance.length > 0 ? (
                                         <ReactApexChart 
                                             options={{
                                                 chart: {
                                                     type: 'area',
                                                     background: 'transparent',
+                                                    redrawOnParentResize: true,
+                                                    redrawOnWindowResize: true,
                                                     toolbar: {
                                                         show: true,
                                                         tools: {
@@ -831,7 +852,15 @@ const Dashboard = () => {
                                                 yaxis: {
                                                     labels: {
                                                         style: { colors: theme === 'dark' ? '#94A3B8' : '#64748B', fontFamily: 'Inter' },
-                                                        formatter: (value) => `PKR ${(value / 1000).toFixed(0)}k`
+                                                        formatter: (value) => {
+                                                            if (value === null || value === undefined || isNaN(value)) return 'PKR 0k';
+                                                            const hasMillions = performance && performance.some((p: any) => Math.abs(p.value || 0) >= 1_000_000);
+                                                            if (hasMillions || Math.abs(value) >= 1_000_000) {
+                                                                return `PKR ${(value / 1_000_000).toFixed(2)}M`;
+                                                            }
+                                                            const inK = value / 1_000;
+                                                            return `PKR ${inK % 1 === 0 ? inK.toFixed(0) : inK.toFixed(1)}k`;
+                                                        }
                                                     }
                                                 },
                                                 grid: {
@@ -841,7 +870,15 @@ const Dashboard = () => {
                                                 tooltip: {
                                                     theme: theme,
                                                     x: { format: 'dd MMM yyyy' },
-                                                    y: { formatter: (value) => `PKR ${value.toLocaleString()}` },
+                                                    y: {
+                                                        formatter: (value) => {
+                                                            if (value === null || value === undefined || isNaN(value)) return 'PKR 0.00 (0k)';
+                                                            const full = Number(value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                                                            const abs = Math.abs(value);
+                                                            const unit = abs >= 1_000_000 ? ` (${(value / 1_000_000).toFixed(2)}M)` : ` (${(value / 1_000).toFixed(1)}k)`;
+                                                            return `PKR ${full}${unit}`;
+                                                        }
+                                                    },
                                                     marker: { show: true },
                                                 }
                                             } as ApexOptions} 
@@ -850,6 +887,7 @@ const Dashboard = () => {
                                                 data: performance.map((p: any) => p.value)
                                             }]} 
                                             type="area" 
+                                            width="100%"
                                             height="100%" 
                                         />
                                     ) : (
@@ -1014,7 +1052,7 @@ const Dashboard = () => {
                                                         <td className="px-6 py-4 text-xs font-mono text-text-secondary">{row.date}</td>
                                                         <td className="px-6 py-4 text-sm font-semibold text-text-primary">{row.bank}</td>
                                                         <td className="px-6 py-4 text-sm text-text-secondary">{row.action || "Statement Parsed"}</td>
-                                                        <td className="px-6 py-4 text-right font-mono text-sm font-bold text-text-primary">
+                                                        <td className="px-6 py-4 text-right font-mono text-sm font-bold text-text-primary whitespace-nowrap">
                                                             {formatCurrency(row.amount ?? row.total_value)}
                                                         </td>
                                                         <td className="px-6 py-4 text-center">
@@ -1404,12 +1442,12 @@ const Dashboard = () => {
                                                 <td className="py-4 text-xs">
                                                     <span className="px-2 py-1 bg-[var(--color-white-5)] rounded-md border border-[var(--color-white-10)]">{h.category}</span>
                                                 </td>
-                                                <td className="py-4 text-right font-mono text-sm">{h.units.toLocaleString()}</td>
-                                                <td className="py-4 text-right font-mono text-sm">PKR {h.nav.toFixed(4)}</td>
-                                                <td className="py-4 text-right font-bold text-text-primary">
+                                                <td className="py-4 text-right font-mono text-sm whitespace-nowrap">{h.units.toLocaleString()}</td>
+                                                <td className="py-4 text-right font-mono text-sm whitespace-nowrap">PKR {h.nav.toFixed(4)}</td>
+                                                <td className="py-4 text-right font-bold text-text-primary whitespace-nowrap">
                                                     PKR {h.market_value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                 </td>
-                                                <td className="py-4 text-right">
+                                                <td className="py-4 text-right whitespace-nowrap">
                                                     {h.gain_loss !== 0 ? (
                                                         <>
                                                             <p className={`font-bold ${h.gain_loss >= 0 ? 'text-success' : 'text-danger'}`}>
@@ -1547,23 +1585,35 @@ const NavItem = ({ icon, label, active, isOpen, onClick }: any) => (
     </button>
 );
 
-const KPICard = ({ title, value, subtitle, badge, tone, className }: any) => (
-    <div className={`bg-surface border border-[var(--color-white-5)] rounded-2xl p-5 hover:border-[var(--color-white-10)] transition-all shadow-sm group relative flex flex-col justify-between overflow-hidden min-w-0 ${className || ''}`}>
-        <div className="flex justify-between items-start gap-2 mb-1">
-            <h3 className="text-text-secondary text-[11px] font-semibold uppercase tracking-wider truncate" title={title}>{title}</h3>
-            {badge && (
-                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 whitespace-nowrap shrink-0">
-                    {badge}
-                </span>
-            )}
+const KPICard = ({ title, value, subtitle, badge, tone, className }: any) => {
+    const isPKR = typeof value === 'string' && value.startsWith('PKR ');
+    const displayValue = isPKR ? value.replace('PKR ', '') : value;
+
+    return (
+        <div className={`bg-surface border border-[var(--color-white-5)] rounded-2xl p-5 hover:border-[var(--color-white-10)] transition-all shadow-sm group relative flex flex-col justify-between min-w-0 ${className || ''}`}>
+            <div className="flex justify-between items-start gap-2 mb-2">
+                <h3 className="text-text-secondary text-xs font-semibold uppercase tracking-wider leading-tight" title={title}>
+                    {title}
+                </h3>
+                {badge && (
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 whitespace-nowrap shrink-0">
+                        {badge}
+                    </span>
+                )}
+            </div>
+            <div className="my-1">
+                <p className={`text-lg sm:text-xl xl:text-2xl font-bold font-mono tabular-nums tracking-tight whitespace-nowrap leading-tight ${tone === 'down' ? 'text-danger' : tone === 'up' ? 'text-success' : 'text-text-primary'}`} title={value}>
+                    {isPKR && <span className="text-xs sm:text-sm font-sans font-semibold opacity-75 mr-1.5">PKR</span>}
+                    {displayValue}
+                </p>
+            </div>
+            {subtitle ? (
+                <p className="text-xs text-text-secondary mt-1 font-medium leading-normal whitespace-nowrap truncate" title={subtitle}>
+                    {subtitle}
+                </p>
+            ) : <div className="h-4" />}
         </div>
-        <p className={`mt-1 text-base sm:text-lg xl:text-xl font-bold font-mono tabular-nums tracking-tight truncate ${tone === 'down' ? 'text-danger' : tone === 'up' ? 'text-success' : 'text-text-primary'}`} title={value}>
-            {value}
-        </p>
-        {subtitle ? (
-            <p className="text-xs text-text-secondary mt-1 font-medium truncate" title={subtitle}>{subtitle}</p>
-        ) : <div className="h-4" />}
-    </div>
-);
+    );
+};
 
 export default Dashboard;

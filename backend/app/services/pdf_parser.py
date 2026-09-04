@@ -251,9 +251,14 @@ class PDFParser:
                 if contrib_match:
                     tot_contrib = float(contrib_match.group(1).replace(',', ''))
                     market_val = data["summary"].get("total_market_value", 0.0)
-                    data["summary"]["total_gain_loss"] = market_val - tot_contrib
+                    # "Total Investments" in HBL statements is monthly deposit activity (often 0.00), not cumulative contribution.
+                    if tot_contrib > 0:
+                        data["summary"]["total_gain_loss"] = market_val - tot_contrib
+                    else:
+                        data["summary"]["total_gain_loss"] = sum(h.get("gain_loss", 0.0) for h in data["holdings"])
                 else:
                     data["summary"]["total_gain_loss"] = sum(h.get("gain_loss", 0.0) for h in data["holdings"])
+
 
             else:
                 # Meezan Data Row Regex: Fund Acronym | Type of Units | Units | NAV | Value | Gain (FYTD) | Gain (To Date)

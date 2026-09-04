@@ -17,13 +17,18 @@ router = APIRouter(
 
 def get_latest_statements(db: Session, user_id: int, bank_name: Optional[str] = None, days: Optional[int] = None, portfolio_account: Optional[str] = None):
     """Helper to get the most recent statement for each portfolio owned by the user, optionally filtered by bank and date range."""
-    query = db.query(models.Portfolio).filter(models.Portfolio.user_id == user_id)
+    # Only retrieve portfolios that currently have active statements in the ledger
+    query = db.query(models.Portfolio).join(
+        models.Statement, models.Statement.portfolio_id == models.Portfolio.id
+    ).filter(
+        models.Portfolio.user_id == user_id
+    )
     if bank_name:
-        query = query.join(models.Bank).filter(func.lower(models.Bank.name) == bank_name.lower())
+        query = query.join(models.Bank, models.Portfolio.bank_id == models.Bank.id).filter(func.lower(models.Bank.name) == bank_name.lower())
     if portfolio_account:
         query = query.filter(models.Portfolio.account_number == portfolio_account)
         
-    portfolios = query.all()
+    portfolios = query.distinct().all()
     portfolio_ids = [p.id for p in portfolios]
     
     statement_query = db.query(models.Statement).filter(models.Statement.portfolio_id.in_(portfolio_ids))
@@ -81,10 +86,6 @@ def get_dashboard_summary(
     portfolio_banks = {p.id: (p.bank.name if p.bank else "Unknown") for p in portfolios}
     portfolio_ids = list(portfolio_banks.keys())
     
-    # Find top performing fund
-    best_fund_name = "N/A"
-    best_fund_pct = -float('inf')
-    
     for stmt in latest_statements:
         raw = stmt.raw_data if isinstance(stmt.raw_data, dict) else json.loads(stmt.raw_data)
         summary = raw.get("summary", {})
@@ -98,32 +99,9 @@ def get_dashboard_summary(
         b_name = portfolio_banks.get(stmt.portfolio_id, "Unknown")
         bank_totals[b_name] += val
         
-        # Calculate individual fund performance
-        holdings = raw.get("holdings", [])
-        for holding in holdings:
-            h_val = holding.get("market_value", 0.0)
-            h_gain = holding.get("gain_loss", 0.0)
-            h_invested = h_val - h_gain
-            
-            if h_invested > 0:
-                pct = (h_gain / h_invested) * 100
-                if pct > best_fund_pct:
-                    best_fund_pct = pct
-                    best_fund_name = holding.get("fund_name", "Unknown")
-        
-    top_performer_title = "N/A"
-    top_performer_subtitle = "Best ROI"
-    
-    if bank and best_fund_name != "N/A":
-        # If looking at a specific bank, show the best fund
-        top_performer_title = best_fund_name
-        top_performer_subtitle = f"{best_fund_pct:.2f}% Yield"
-    elif bank_totals:
-        # If looking globally, show the best bank
-        top_performer_title = max(bank_totals.items(), key=lambda x: x[1])[0]
-        
-    total_invested = total_net_worth - total_gain_loss
+    total_invested = max(0.0, total_net_worth - total_gain_loss)
     monthly_change_pct = (total_gain_loss / total_invested * 100) if total_invested > 0 else 0.0
+
     
     # Check if there's at least 1 month of data
     has_one_month = False
@@ -144,11 +122,9 @@ def get_dashboard_summary(
         "total_invested": total_invested,
         "total_gain_loss": total_gain_loss,
         "monthly_change_pct": monthly_change_pct,
-        "top_performing_bank": top_performer_title,
-        "top_performing_subtitle": top_performer_subtitle,
         "has_one_month": has_one_month,
         "bank_breakdown": dict(bank_totals),
-        "available_portfolios": list(set([p.account_number for p in portfolios if p.account_number]))
+        "available_portfolios": sorted(list(set([p.account_number for p in portfolios if p.account_number])))
     }
 
 @router.get("/holdings", response_model=List[Dict[str, Any]])
@@ -174,11 +150,18 @@ def get_detailed_holdings(
         holdings = raw.get("holdings", [])
         
         for holding in holdings:
-            h_val = holding.get("market_value", 0.0)
-            h_gain = holding.get("gain_loss", 0.0)
-            h_invested = h_val - h_gain
+            h_val = float(holding.get("market_value", 0.0) or 0.0)
+            h_gain = float(holding.get("gain_loss", 0.0) or 0.0)
+            h_units = float(holding.get("units", 0.0) or 0.0)
             
-            pct_change = (h_gain / h_invested * 100) if h_invested > 0 else 0.0
+            # If units or market value are 0 (e.g. redeemed / closed positions or zero balance),
+            # current active investment is 0.0, NEVER negative.
+            if h_val <= 0.0 or h_units <= 0.0:
+                h_invested = 0.0
+                pct_change = 0.0
+            else:
+                h_invested = max(0.0, h_val - h_gain)
+                pct_change = (h_gain / h_invested * 100) if h_invested > 0 else 0.0
             
             # Use raw percentage change if provided, otherwise compute it
             if "percent_change" in holding and holding["percent_change"] != 0.0:
@@ -189,13 +172,14 @@ def get_detailed_holdings(
                 "bank": b_name,
                 "portfolio_account": p_account,
                 "category": holding.get("category", "Other"),
-                "units": holding.get("units", 0.0),
+                "units": h_units,
                 "nav": holding.get("nav", 0.0),
                 "investment_amount": h_invested,
                 "market_value": h_val,
                 "gain_loss": h_gain,
                 "percentage_change": pct_change
             })
+
             
     # Sort holdings naturally by highest market value
     return sorted(all_holdings, key=lambda x: x["market_value"], reverse=True)
