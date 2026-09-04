@@ -38,7 +38,7 @@ export const FeatureInfoModal: React.FC<FeatureInfoModalProps> = ({
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-5 right-5 p-2 text-text-secondary hover:text-white bg-[var(--color-white-5)] hover:bg-[var(--color-white-10)] rounded-full transition-colors"
+          className="absolute top-5 right-5 p-2 text-text-secondary hover:text-text-primary bg-[var(--color-white-5)] hover:bg-[var(--color-white-10)] rounded-full transition-colors"
           title="Close guide"
         >
           <X size={18} />

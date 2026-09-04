@@ -35,7 +35,7 @@ const StatementUploadModal: React.FC<Props> = ({ isOpen, onClose }) => {
                 setResult({
                     type: 'success',
                     message: data.message || 'Statement processed.',
-                    details: `${data.holdings_count} holdings • Total PKR ${(data.total_market_value || 0).toLocaleString()}`,
+                    details: `${data.holdings_count} holdings • Total PKR ${(data.total_market_value || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
                 });
                 setFile(null);
             }
@@ -51,7 +51,7 @@ const StatementUploadModal: React.FC<Props> = ({ isOpen, onClose }) => {
             <div className="bg-surface border border-[var(--color-white-10)] rounded-3xl p-8 max-w-md w-full shadow-2xl relative">
                 <button
                     onClick={onClose}
-                    className="absolute top-4 right-4 p-2 text-text-secondary hover:text-white bg-[var(--color-white-5)] hover:bg-[var(--color-white-10)] rounded-full transition-colors"
+                    className="absolute top-4 right-4 p-2 text-text-secondary hover:text-text-primary bg-[var(--color-white-5)] hover:bg-[var(--color-white-10)] rounded-full transition-colors"
                 >
                     <X size={16} />
                 </button>

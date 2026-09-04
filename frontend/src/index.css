@@ -57,14 +57,14 @@
   }
 
   .light {
-    --theme-midnight: #F1F5F9;
-    --theme-surface: #FFFFFF;
-    --theme-highlight: #F1F5F9;
-    --theme-text-primary: #0F172A;
-    --theme-text-secondary: #475569;
-    --color-white-5: rgba(0, 0, 0, 0.05);
-    --color-white-10: rgba(0, 0, 0, 0.1);
-    --color-white-20: rgba(0, 0, 0, 0.2);
+    --theme-midnight: #EAF5EE;       /* Light Mint Green background peeping through the boxes */
+    --theme-surface: #FAF7F2;        /* Warm Beige / Off-White for all cards and boxes */
+    --theme-highlight: #EFEBE3;      /* Warm beige highlight for inputs / sub-pills */
+    --theme-text-primary: #0F291E;   /* Deep crisp forest-slate for high contrast */
+    --theme-text-secondary: #4A6356; /* Elegant sage slate for secondary labels */
+    --color-white-5: rgba(20, 55, 35, 0.07);
+    --color-white-10: rgba(20, 55, 35, 0.12);
+    --color-white-20: rgba(20, 55, 35, 0.20);
   }
 
   html,

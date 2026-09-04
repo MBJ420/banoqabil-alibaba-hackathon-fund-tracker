@@ -114,7 +114,7 @@ const Dashboard = () => {
     const { toast } = useToast();
 
     const [theme, setTheme] = useState<'dark' | 'light'>(() => {
-        return (localStorage.getItem('theme') as 'dark' | 'light') || 'dark';
+        return (localStorage.getItem('theme') as 'dark' | 'light') || 'light';
     });
 
     const [isCalculatorModalOpen, setIsCalculatorModalOpen] = useState(false);
@@ -491,7 +491,7 @@ const Dashboard = () => {
                         </div>
                         {isSidebarOpen && (
                             <div className="transition-opacity duration-300 whitespace-nowrap overflow-hidden">
-                                <h1 className="text-lg font-bold tracking-tight text-white leading-none">
+                                <h1 className="text-lg font-bold tracking-tight text-emerald-600 dark:text-emerald-400 leading-none">
                                     FundTracker
                                 </h1>
                                 <p className="text-[10px] text-text-secondary mt-0.5">Wealth Management</p>
@@ -500,7 +500,7 @@ const Dashboard = () => {
                     </div>
                     <button
                         onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                        className={`rounded-lg bg-[var(--color-white-5)] hover:bg-[var(--color-white-10)] text-text-secondary hover:text-white transition-colors shrink-0 ${isSidebarOpen ? 'p-1.5' : 'p-1'}`}
+                        className={`rounded-lg bg-[var(--color-white-5)] hover:bg-[var(--color-white-10)] text-text-secondary hover:text-text-primary transition-colors shrink-0 ${isSidebarOpen ? 'p-1.5' : 'p-1'}`}
                         title={isSidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
                     >
                         {isSidebarOpen ? <ChevronLeft size={16} /> : <ChevronRight size={14} />}
@@ -590,7 +590,7 @@ const Dashboard = () => {
                 </nav>
 
                 <div className="p-3 border-t border-[var(--color-white-5)]">
-                    <button onClick={handleLogout} className={`flex items-center gap-3 text-text-secondary hover:text-white hover:bg-[var(--color-white-5)] p-3 rounded-xl transition-all w-full group ${!isSidebarOpen && 'justify-center'}`} title={!isSidebarOpen ? "Logout" : ""}>
+                    <button onClick={handleLogout} className={`flex items-center gap-3 text-text-secondary hover:text-text-primary hover:bg-[var(--color-white-5)] p-3 rounded-xl transition-all w-full group ${!isSidebarOpen && 'justify-center'}`} title={!isSidebarOpen ? "Logout" : ""}>
                         <LogOut size={20} className="group-hover:text-danger transition-colors shrink-0" />
                         {isSidebarOpen && <span className="font-medium whitespace-nowrap">Logout</span>}
                     </button>
@@ -997,7 +997,7 @@ const Dashboard = () => {
                                                                 className="px-6 py-4 bg-[var(--color-white-5)] border border-[var(--color-white-10)] rounded-2xl hover:bg-emerald-600/20 hover:border-emerald-500 transition-all group relative overflow-hidden flex flex-col items-start min-w-[200px]"
                                                             >
                                                                 <span className="text-[10px] text-text-secondary group-hover:text-emerald-500 transition-colors uppercase font-bold tracking-tighter mb-1">Portfolio</span>
-                                                                <span className="text-sm font-mono font-bold text-text-primary group-hover:text-white transition-colors">{pNo}</span>
+                                                                <span className="text-sm font-mono font-bold text-text-primary group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">{pNo}</span>
                                                                 <div className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
                                                                     <ArrowUpRight size={16} className="text-emerald-500" />
                                                                 </div>
@@ -1108,7 +1108,7 @@ const Dashboard = () => {
                         <div className="bg-surface border border-[var(--color-white-10)] rounded-3xl p-8 max-w-lg w-full shadow-2xl relative">
                             <button
                                 onClick={() => setIsCalculatorModalOpen(false)}
-                                className="absolute top-4 right-4 p-2 text-text-secondary hover:text-white bg-[var(--color-white-5)] hover:bg-[var(--color-white-10)] rounded-full transition-colors"
+                                className="absolute top-4 right-4 p-2 text-text-secondary hover:text-text-primary bg-[var(--color-white-5)] hover:bg-[var(--color-white-10)] rounded-full transition-colors"
                             >
                                 <X size={16} />
                             </button>
@@ -1165,7 +1165,7 @@ const Dashboard = () => {
                         <div className="bg-surface border border-emerald-500/20 rounded-3xl p-6 md:p-8 max-w-5xl w-full h-[90vh] shadow-2xl relative flex flex-col">
                             <button
                                 onClick={() => setIsPerformanceModalOpen(false)}
-                                className="absolute top-4 right-4 p-2 text-text-secondary hover:text-white bg-[var(--color-white-5)] hover:bg-danger/20 rounded-full transition-colors z-10"
+                                className="absolute top-4 right-4 p-2 text-text-secondary hover:text-text-primary bg-[var(--color-white-5)] hover:bg-danger/20 rounded-full transition-colors z-10"
                             >
                                 <X size={16} />
                             </button>
@@ -1176,7 +1176,7 @@ const Dashboard = () => {
                                         <TrendingUp size={28} />
                                     </div>
                                     <div>
-                                        <h2 className="text-2xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">
+                                        <h2 className="text-2xl font-bold tracking-tight text-text-primary">
                                             {selectedBank} <span className="text-emerald-500">Fund Performances</span>
                                         </h2>
                                         <div className="flex items-center gap-2 text-xs text-text-secondary mt-0.5">
@@ -1231,36 +1231,36 @@ const Dashboard = () => {
                                             onChange={e => setSelectedCategoryFilter(e.target.value || null)}
                                             className="bg-[var(--color-white-5)] border border-[var(--color-white-10)] rounded-xl px-4 py-3 text-sm outline-none focus:border-emerald-500 text-text-primary custom-select shadow-sm"
                                         >
-                                            <option value="" className="bg-[#1a1625] text-white py-2">All Categories</option>
-                                            <option value="Money Market" className="bg-[#1a1625] text-white py-2">Money Market</option>
-                                            <option value="Income" className="bg-[#1a1625] text-white py-2">Income / Debt</option>
-                                            <option value="Equity" className="bg-[#1a1625] text-white py-2">Equity / Stock</option>
+                                            <option value="" className="bg-surface text-text-primary py-2">All Categories</option>
+                                            <option value="Money Market" className="bg-surface text-text-primary py-2">Money Market</option>
+                                            <option value="Income" className="bg-surface text-text-primary py-2">Income / Debt</option>
+                                            <option value="Equity" className="bg-surface text-text-primary py-2">Equity / Stock</option>
                                         </select>
                                         <select
                                             value={selectedRiskFilter || ""}
                                             onChange={e => setSelectedRiskFilter(e.target.value || null)}
                                             className="bg-[var(--color-white-5)] border border-[var(--color-white-10)] rounded-xl px-4 py-3 text-sm outline-none focus:border-emerald-500 text-text-primary custom-select shadow-sm"
                                         >
-                                            <option value="" className="bg-[#1a1625] text-white py-2">All Risk Profiles</option>
-                                            <option value="Low" className="bg-[#1a1625] text-success py-2">Low Risk</option>
-                                            <option value="Medium" className="bg-[#1a1625] text-warning py-2">Medium Risk</option>
-                                            <option value="High" className="bg-[#1a1625] text-danger py-2">High Risk</option>
+                                            <option value="" className="bg-surface text-text-primary py-2">All Risk Profiles</option>
+                                            <option value="Low" className="bg-surface text-success py-2">Low Risk</option>
+                                            <option value="Medium" className="bg-surface text-warning py-2">Medium Risk</option>
+                                            <option value="High" className="bg-surface text-danger py-2">High Risk</option>
                                         </select>
                                     </div>
                                 </div>
 
                                 {/* Table of Funds */}
-                                <div className="bg-black/20 rounded-2xl border border-[var(--color-white-5)] overflow-hidden flex-1 flex flex-col">
+                                <div className="bg-[var(--color-white-5)] rounded-2xl border border-[var(--color-white-5)] overflow-hidden flex-1 flex flex-col">
                                     <div className="overflow-auto custom-scrollbar flex-1">
                                         <table className="w-full text-left border-collapse">
                                             <thead>
                                                 <tr className="border-b border-[var(--color-white-5)] text-text-secondary text-xs uppercase tracking-wider bg-[var(--color-white-5)]">
                                                     <th className="py-3 px-4 font-semibold">Fund Name</th>
-                                                    <th className="py-3 px-4 font-semibold hover:text-white cursor-pointer transition-colors" onClick={() => handleSort('nav')}>Latest NAV {sortConfig?.key === 'nav' ? (sortConfig.direction === 'asc' ? '↑' : '↓') : ''}</th>
-                                                    <th className="py-3 px-4 font-semibold text-right hover:text-white cursor-pointer transition-colors" onClick={() => handleSort('return_1m')}>1 Month {sortConfig?.key === 'return_1m' ? (sortConfig.direction === 'asc' ? '↑' : '↓') : ''}</th>
-                                                    <th className="py-3 px-4 font-semibold text-right hover:text-white cursor-pointer transition-colors" onClick={() => handleSort('return_6m')}>6 Month {sortConfig?.key === 'return_6m' ? (sortConfig.direction === 'asc' ? '↑' : '↓') : ''}</th>
-                                                    <th className="py-3 px-4 font-semibold text-right hover:text-white cursor-pointer transition-colors" onClick={() => handleSort('return_1y')}>1 Year {sortConfig?.key === 'return_1y' ? (sortConfig.direction === 'asc' ? '↑' : '↓') : ''}</th>
-                                                    <th className="py-3 px-4 font-semibold text-right hover:text-white cursor-pointer transition-colors" onClick={() => handleSort('return_ytd')}>YTD {sortConfig?.key === 'return_ytd' ? (sortConfig.direction === 'asc' ? '↑' : '↓') : ''}</th>
+                                                    <th className="py-3 px-4 font-semibold hover:text-text-primary cursor-pointer transition-colors" onClick={() => handleSort('nav')}>Latest NAV {sortConfig?.key === 'nav' ? (sortConfig.direction === 'asc' ? '↑' : '↓') : ''}</th>
+                                                    <th className="py-3 px-4 font-semibold text-right hover:text-text-primary cursor-pointer transition-colors" onClick={() => handleSort('return_1m')}>1 Month {sortConfig?.key === 'return_1m' ? (sortConfig.direction === 'asc' ? '↑' : '↓') : ''}</th>
+                                                    <th className="py-3 px-4 font-semibold text-right hover:text-text-primary cursor-pointer transition-colors" onClick={() => handleSort('return_6m')}>6 Month {sortConfig?.key === 'return_6m' ? (sortConfig.direction === 'asc' ? '↑' : '↓') : ''}</th>
+                                                    <th className="py-3 px-4 font-semibold text-right hover:text-text-primary cursor-pointer transition-colors" onClick={() => handleSort('return_1y')}>1 Year {sortConfig?.key === 'return_1y' ? (sortConfig.direction === 'asc' ? '↑' : '↓') : ''}</th>
+                                                    <th className="py-3 px-4 font-semibold text-right hover:text-text-primary cursor-pointer transition-colors" onClick={() => handleSort('return_ytd')}>YTD {sortConfig?.key === 'return_ytd' ? (sortConfig.direction === 'asc' ? '↑' : '↓') : ''}</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -1401,7 +1401,7 @@ const Dashboard = () => {
                         <div className="bg-surface border border-emerald-500/20 rounded-3xl p-6 md:p-8 max-w-5xl w-full h-[85vh] shadow-2xl relative flex flex-col">
                             <button
                                 onClick={() => setIsStatementDetailsOpen(false)}
-                                className="absolute top-4 right-4 p-2 text-text-secondary hover:text-white bg-[var(--color-white-5)] hover:bg-danger/20 rounded-full transition-colors z-10"
+                                className="absolute top-4 right-4 p-2 text-text-secondary hover:text-text-primary bg-[var(--color-white-5)] hover:bg-danger/20 rounded-full transition-colors z-10"
                             >
                                 <X size={16} />
                             </button>
@@ -1476,7 +1476,7 @@ const Dashboard = () => {
                         <div className="bg-surface border border-warning/20 rounded-3xl p-6 md:p-8 max-w-lg w-full shadow-2xl relative">
                             <button
                                 onClick={() => setIsPdfSettingsOpen(false)}
-                                className="absolute top-4 right-4 p-2 text-text-secondary hover:text-white bg-[var(--color-white-5)] hover:bg-danger/20 rounded-full transition-colors"
+                                className="absolute top-4 right-4 p-2 text-text-secondary hover:text-text-primary bg-[var(--color-white-5)] hover:bg-danger/20 rounded-full transition-colors"
                             >
                                 <X size={16} />
                             </button>
@@ -1572,13 +1572,13 @@ const NavItem = ({ icon, label, active, isOpen, onClick }: any) => (
         className={`flex items-center gap-3 w-full p-3 rounded-lg transition-all duration-200 group
       ${active
                 ? 'bg-emerald-600/10 text-emerald-500 border border-emerald-500/20 font-semibold'
-                : 'text-text-secondary hover:bg-[var(--color-white-5)] hover:text-white'
+                : 'text-text-secondary hover:bg-[var(--color-white-5)] hover:text-text-primary'
             }
       ${!isOpen && 'justify-center'}
     `}
         title={!isOpen ? label : ''}
     >
-        <span className={`${active ? 'text-emerald-500' : 'text-text-secondary group-hover:text-white'} transition-colors`}>
+        <span className={`${active ? 'text-emerald-500' : 'text-text-secondary group-hover:text-text-primary'} transition-colors`}>
             {icon}
         </span>
         {isOpen && <span className="whitespace-nowrap">{label}</span>}

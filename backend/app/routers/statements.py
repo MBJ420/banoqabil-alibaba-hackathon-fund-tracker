@@ -119,7 +119,9 @@ async def get_data_manager_meta(
 ):
     """Returns available institutions, categories, and portfolios for user dropdowns."""
     banks = db.query(models.Bank).all()
-    user_portfolios = db.query(models.Portfolio).filter(models.Portfolio.user_id == current_user.id).all()
+    user_portfolios = db.query(models.Portfolio).join(
+        models.Statement, models.Statement.portfolio_id == models.Portfolio.id
+    ).filter(models.Portfolio.user_id == current_user.id).distinct().all()
     
     standard_categories = [
         "Money Market",

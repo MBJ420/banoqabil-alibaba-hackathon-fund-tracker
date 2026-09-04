@@ -528,8 +528,14 @@ def delete_user_statement_with_file_option(
     db.delete(stmt)
     db.commit()
 
-    # If the portfolio now has 0 statements and was a manual entry portfolio, keep or clean
+    # If the portfolio now has 0 statements, clean up the portfolio so it does not persist as an empty ghost portfolio
     remaining = db.query(models.Statement).filter(models.Statement.portfolio_id == portfolio_id).count()
+    if remaining == 0:
+        port = db.query(models.Portfolio).filter(models.Portfolio.id == portfolio_id).first()
+        if port:
+            db.delete(port)
+            db.commit()
+            logger.info(f"Cleaned up empty portfolio {portfolio_id} ({port.account_number}) as it has 0 remaining statements.")
 
     return {
         "status": "success",

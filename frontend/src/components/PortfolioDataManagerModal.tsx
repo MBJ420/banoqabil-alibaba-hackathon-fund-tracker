@@ -150,7 +150,7 @@ export const PortfolioDataManagerModal: React.FC<Props> = ({ isOpen, onClose, on
 
   // Format currency
   const formatPKR = (val: number) => {
-    return 'PKR ' + (val || 0).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+    return 'PKR ' + (val || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
 
   // Filtered statements
@@ -397,17 +397,17 @@ export const PortfolioDataManagerModal: React.FC<Props> = ({ isOpen, onClose, on
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md p-3 sm:p-6">
-      <div className="bg-[#0f172a] border border-[var(--color-white-10)] rounded-3xl w-full max-w-5xl shadow-2xl relative max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+      <div className="bg-surface border border-[var(--color-white-10)] rounded-3xl w-full max-w-5xl shadow-2xl relative max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
         {/* Header */}
-        <div className="p-6 border-b border-white/10 flex items-center justify-between shrink-0 bg-surface/50">
+        <div className="p-6 border-b border-[var(--color-white-10)] flex items-center justify-between shrink-0 bg-surface/50">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-emerald-500/20 text-emerald-400 rounded-2xl border border-emerald-500/30 shadow-md shadow-emerald-500/10">
+            <div className="p-2.5 bg-emerald-500/20 text-emerald-500 rounded-2xl border border-emerald-500/30 shadow-md shadow-emerald-500/10">
               <Database size={24} />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-xl font-bold text-white tracking-tight">Portfolio Data Manager</h2>
-                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                <h2 className="text-xl font-bold text-text-primary tracking-tight">Portfolio Data Manager</h2>
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
                   Database Ledger GUI
                 </span>
               </div>
@@ -419,26 +419,26 @@ export const PortfolioDataManagerModal: React.FC<Props> = ({ isOpen, onClose, on
 
           <button
             onClick={onClose}
-            className="p-2 text-text-secondary hover:text-white bg-white/5 hover:bg-white/10 rounded-full transition-colors"
+            className="p-2 text-text-secondary hover:text-text-primary bg-[var(--color-white-5)] hover:bg-[var(--color-white-10)] rounded-full transition-colors"
           >
             <X size={18} />
           </button>
         </div>
 
         {/* Tab Navigation & Refresh */}
-        <div className="px-6 pt-4 pb-2 border-b border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0 bg-surface/25">
+        <div className="px-6 pt-4 pb-2 border-b border-[var(--color-white-5)] flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0 bg-surface/25">
           <div className="flex items-center gap-2">
             <button
               onClick={() => setActiveTab('ledger')}
               className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
                 activeTab === 'ledger'
                   ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/30'
-                  : 'bg-white/5 text-text-secondary hover:text-white hover:bg-white/10'
+                  : 'bg-[var(--color-white-5)] text-text-secondary hover:text-text-primary hover:bg-[var(--color-white-10)]'
               }`}
             >
               <Layers size={14} />
               <span>Statements & Holdings Ledger</span>
-              <span className="ml-1 px-1.5 py-0.2 bg-black/30 rounded-full text-[10px]">
+              <span className="ml-1 px-1.5 py-0.2 bg-black/20 text-text-secondary rounded-full text-[10px]">
                 {statements.length}
               </span>
             </button>
@@ -448,7 +448,7 @@ export const PortfolioDataManagerModal: React.FC<Props> = ({ isOpen, onClose, on
               className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
                 activeTab === 'manual'
                   ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/30'
-                  : 'bg-white/5 text-text-secondary hover:text-white hover:bg-white/10'
+                  : 'bg-[var(--color-white-5)] text-text-secondary hover:text-text-primary hover:bg-[var(--color-white-10)]'
               }`}
             >
               <Plus size={14} />
@@ -460,7 +460,7 @@ export const PortfolioDataManagerModal: React.FC<Props> = ({ isOpen, onClose, on
             <button
               onClick={fetchData}
               disabled={loading}
-              className="flex items-center gap-1 hover:text-white p-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
+              className="flex items-center gap-1 text-text-secondary hover:text-text-primary p-1.5 rounded-lg bg-[var(--color-white-5)] hover:bg-[var(--color-white-10)] transition-colors"
               title="Refresh ledger"
             >
               <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
@@ -638,11 +638,11 @@ export const PortfolioDataManagerModal: React.FC<Props> = ({ isOpen, onClose, on
 
                         {/* Expanded Holdings Table / Editor */}
                         {isExpanded && (
-                          <div className="p-4 sm:p-5 border-t border-white/5 bg-black/20 space-y-4">
+                          <div className="p-4 sm:p-5 border-t border-[var(--color-white-5)] bg-surface-highlight/30 space-y-4">
                             {isEditing && editDraft ? (
                               /* ── EDIT MODE ── */
                               <div className="space-y-4">
-                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 bg-white/3 rounded-xl border border-white/5">
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 bg-[var(--color-white-5)] rounded-xl border border-[var(--color-white-10)]">
                                   <div>
                                     <label className="block text-[10px] font-semibold text-text-secondary uppercase mb-1">
                                       Statement Date
@@ -651,7 +651,7 @@ export const PortfolioDataManagerModal: React.FC<Props> = ({ isOpen, onClose, on
                                       type="date"
                                       value={editDraft.date}
                                       onChange={(e) => setEditDraft({ ...editDraft, date: e.target.value })}
-                                      className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500"
+                                      className="w-full bg-[var(--color-white-5)] border border-[var(--color-white-10)] rounded-lg px-3 py-1.5 text-xs text-text-primary focus:outline-none focus:border-emerald-500"
                                     />
                                   </div>
                                   <div>
@@ -662,7 +662,7 @@ export const PortfolioDataManagerModal: React.FC<Props> = ({ isOpen, onClose, on
                                       type="text"
                                       value={editDraft.bank}
                                       onChange={(e) => setEditDraft({ ...editDraft, bank: e.target.value })}
-                                      className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500"
+                                      className="w-full bg-[var(--color-white-5)] border border-[var(--color-white-10)] rounded-lg px-3 py-1.5 text-xs text-text-primary focus:outline-none focus:border-emerald-500"
                                     />
                                   </div>
                                   <div>
@@ -675,19 +675,19 @@ export const PortfolioDataManagerModal: React.FC<Props> = ({ isOpen, onClose, on
                                       onChange={(e) =>
                                         setEditDraft({ ...editDraft, account_number: e.target.value })
                                       }
-                                      className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500"
+                                      className="w-full bg-[var(--color-white-5)] border border-[var(--color-white-10)] rounded-lg px-3 py-1.5 text-xs text-text-primary focus:outline-none focus:border-emerald-500"
                                     />
                                   </div>
                                 </div>
 
                                 <div className="space-y-2">
                                   <div className="flex items-center justify-between">
-                                    <p className="text-xs font-semibold text-white uppercase tracking-wider">
+                                    <p className="text-xs font-semibold text-text-primary uppercase tracking-wider">
                                       Holdings in this statement
                                     </p>
                                     <button
                                       onClick={handleAddHoldingToDraft}
-                                      className="text-xs text-emerald-400 hover:text-emerald-300 flex items-center gap-1 font-semibold"
+                                      className="text-xs text-emerald-500 hover:text-emerald-600 flex items-center gap-1 font-semibold"
                                     >
                                       <Plus size={13} />
                                       <span>Add Fund</span>
@@ -698,7 +698,7 @@ export const PortfolioDataManagerModal: React.FC<Props> = ({ isOpen, onClose, on
                                     {editDraft.holdings.map((h, hIdx) => (
                                       <div
                                         key={hIdx}
-                                        className="grid grid-cols-1 sm:grid-cols-12 gap-2 p-3 bg-white/5 rounded-xl border border-white/5 items-center"
+                                        className="grid grid-cols-1 sm:grid-cols-12 gap-2 p-3 bg-[var(--color-white-5)] rounded-xl border border-[var(--color-white-10)] items-center"
                                       >
                                         <div className="sm:col-span-4">
                                           <label className="block text-[9px] text-text-secondary uppercase mb-0.5">
@@ -711,7 +711,7 @@ export const PortfolioDataManagerModal: React.FC<Props> = ({ isOpen, onClose, on
                                               handleEditHoldingField(hIdx, 'fund_name', e.target.value)
                                             }
                                             placeholder="e.g. Meezan Cash Fund"
-                                            className="w-full bg-black/40 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500"
+                                            className="w-full bg-[var(--color-white-5)] border border-[var(--color-white-10)] rounded-lg px-2.5 py-1.5 text-xs text-text-primary focus:outline-none focus:border-emerald-500"
                                           />
                                         </div>
 
@@ -724,10 +724,10 @@ export const PortfolioDataManagerModal: React.FC<Props> = ({ isOpen, onClose, on
                                             onChange={(e) =>
                                               handleEditHoldingField(hIdx, 'category', e.target.value)
                                             }
-                                            className="w-full bg-black/40 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500"
+                                            className="w-full bg-[var(--color-white-5)] border border-[var(--color-white-10)] rounded-lg px-2.5 py-1.5 text-xs text-text-primary focus:outline-none focus:border-emerald-500"
                                           >
                                             {meta.categories.map((cat) => (
-                                              <option key={cat} value={cat} className="bg-[#0f172a]">
+                                              <option key={cat} value={cat} className="bg-surface text-text-primary">
                                                 {cat}
                                               </option>
                                             ))}
@@ -748,7 +748,7 @@ export const PortfolioDataManagerModal: React.FC<Props> = ({ isOpen, onClose, on
                                                 parseFloat(e.target.value) || 0
                                               )
                                             }
-                                            className="w-full bg-black/40 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs font-mono text-white focus:outline-none focus:border-emerald-500"
+                                            className="w-full bg-[var(--color-white-5)] border border-[var(--color-white-10)] rounded-lg px-2.5 py-1.5 text-xs font-mono text-text-primary focus:outline-none focus:border-emerald-500"
                                           />
                                         </div>
 
@@ -767,7 +767,7 @@ export const PortfolioDataManagerModal: React.FC<Props> = ({ isOpen, onClose, on
                                                   parseFloat(e.target.value) || 0
                                                 )
                                               }
-                                              className="w-full bg-black/40 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs font-mono text-white focus:outline-none focus:border-emerald-500"
+                                              className="w-full bg-[var(--color-white-5)] border border-[var(--color-white-10)] rounded-lg px-2.5 py-1.5 text-xs font-mono text-text-primary focus:outline-none focus:border-emerald-500"
                                             />
                                           </div>
                                           <button
@@ -807,11 +807,11 @@ export const PortfolioDataManagerModal: React.FC<Props> = ({ isOpen, onClose, on
                                               {h.category}
                                             </span>
                                           </td>
-                                          <td className="py-2.5 text-right text-emerald-400 font-bold">
+                                          <td className="py-2.5 text-right text-emerald-400 font-bold font-mono whitespace-nowrap">
                                             {formatPKR(h.market_value)}
                                           </td>
                                           <td
-                                            className={`py-2.5 text-right ${
+                                            className={`py-2.5 text-right font-mono whitespace-nowrap ${
                                               isPos ? 'text-emerald-400' : 'text-red-400'
                                             }`}
                                           >
@@ -898,20 +898,20 @@ export const PortfolioDataManagerModal: React.FC<Props> = ({ isOpen, onClose, on
                     value={manualAccount}
                     onChange={(e) => setManualAccount(e.target.value)}
                     placeholder="e.g. MANUAL-001"
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
+                    className="w-full bg-[var(--color-white-5)] border border-[var(--color-white-10)] rounded-xl px-3 py-2 text-xs text-text-primary focus:outline-none focus:border-emerald-500"
                   />
                 </div>
               </div>
 
               {/* Holdings Rows */}
               <div className="space-y-3 pt-2">
-                <div className="flex items-center justify-between border-b border-white/10 pb-2">
-                  <h4 className="text-xs font-bold text-white uppercase tracking-wider">
+                <div className="flex items-center justify-between border-b border-[var(--color-white-10)] pb-2">
+                  <h4 className="text-xs font-bold text-text-primary uppercase tracking-wider">
                     Fund Holdings for this Month
                   </h4>
                   <button
                     onClick={handleAddManualHoldingRow}
-                    className="text-xs text-emerald-400 hover:text-emerald-300 font-semibold flex items-center gap-1"
+                    className="text-xs text-emerald-500 hover:text-emerald-600 font-semibold flex items-center gap-1"
                   >
                     <Plus size={13} />
                     <span>Add Another Fund</span>
@@ -922,7 +922,7 @@ export const PortfolioDataManagerModal: React.FC<Props> = ({ isOpen, onClose, on
                   {manualHoldings.map((row, idx) => (
                     <div
                       key={idx}
-                      className="p-4 bg-white/3 rounded-xl border border-white/5 space-y-3"
+                      className="p-4 bg-[var(--color-white-5)] rounded-xl border border-[var(--color-white-10)] space-y-3"
                     >
                       <div className="flex items-center justify-between">
                         <span className="text-[10px] font-bold text-text-secondary uppercase tracking-wider">
@@ -947,10 +947,10 @@ export const PortfolioDataManagerModal: React.FC<Props> = ({ isOpen, onClose, on
                           <select
                             value={row.category}
                             onChange={(e) => handleManualHoldingChange(idx, 'category', e.target.value)}
-                            className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
+                            className="w-full bg-[var(--color-white-5)] border border-[var(--color-white-10)] rounded-lg px-3 py-2 text-xs text-text-primary focus:outline-none focus:border-emerald-500"
                           >
                             {meta.categories.map((c) => (
-                              <option key={c} value={c} className="bg-[#0f172a]">
+                              <option key={c} value={c} className="bg-surface text-text-primary">
                                 {c}
                               </option>
                             ))}
@@ -966,7 +966,7 @@ export const PortfolioDataManagerModal: React.FC<Props> = ({ isOpen, onClose, on
                             value={row.fund_name}
                             onChange={(e) => handleManualHoldingChange(idx, 'fund_name', e.target.value)}
                             placeholder="e.g. Meezan Cash Fund"
-                            className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
+                            className="w-full bg-[var(--color-white-5)] border border-[var(--color-white-10)] rounded-lg px-3 py-2 text-xs text-text-primary focus:outline-none focus:border-emerald-500"
                           />
                         </div>
 
@@ -981,7 +981,7 @@ export const PortfolioDataManagerModal: React.FC<Props> = ({ isOpen, onClose, on
                               handleManualHoldingChange(idx, 'market_value', parseFloat(e.target.value) || 0)
                             }
                             placeholder="e.g. 150000"
-                            className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-emerald-500"
+                            className="w-full bg-[var(--color-white-5)] border border-[var(--color-white-10)] rounded-lg px-3 py-2 text-xs font-mono text-text-primary focus:outline-none focus:border-emerald-500"
                           />
                         </div>
 
@@ -996,7 +996,7 @@ export const PortfolioDataManagerModal: React.FC<Props> = ({ isOpen, onClose, on
                               handleManualHoldingChange(idx, 'gain_loss', parseFloat(e.target.value) || 0)
                             }
                             placeholder="e.g. 12000 (defaults to 0)"
-                            className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-emerald-500"
+                            className="w-full bg-[var(--color-white-5)] border border-[var(--color-white-10)] rounded-lg px-3 py-2 text-xs font-mono text-text-primary focus:outline-none focus:border-emerald-500"
                           />
                         </div>
                       </div>
@@ -1006,7 +1006,7 @@ export const PortfolioDataManagerModal: React.FC<Props> = ({ isOpen, onClose, on
               </div>
 
               {/* Submit Button */}
-              <div className="flex justify-end pt-4 border-t border-white/5">
+              <div className="flex justify-end pt-4 border-t border-[var(--color-white-5)]">
                 <button
                   onClick={requestCreateManualStatement}
                   className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold transition-all shadow-lg shadow-emerald-900/30 flex items-center gap-2"
@@ -1022,19 +1022,19 @@ export const PortfolioDataManagerModal: React.FC<Props> = ({ isOpen, onClose, on
         {/* ── SAFETY CONFIRMATION WARNING MODAL ────────────────────────────── */}
         {pendingAction && (
           <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-150">
-            <div className="bg-[#0b1329] border border-amber-500/30 rounded-3xl p-6 sm:p-7 max-w-md w-full shadow-2xl relative space-y-4">
+            <div className="bg-surface border border-amber-500/30 rounded-3xl p-6 sm:p-7 max-w-md w-full shadow-2xl relative space-y-4">
               <div className="flex items-center gap-3">
                 <div className="p-2.5 bg-amber-500/10 text-amber-400 rounded-2xl border border-amber-500/20 shrink-0">
                   <AlertTriangle size={24} />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-white tracking-tight">{pendingAction.title}</h3>
-                  <p className="text-xs text-amber-400/90 font-medium mt-0.5">Safety Confirmation Warning</p>
+                  <h3 className="text-base font-bold text-text-primary tracking-tight">{pendingAction.title}</h3>
+                  <p className="text-xs text-amber-500 font-medium mt-0.5">Safety Confirmation Warning</p>
                 </div>
               </div>
 
               <div className="p-3.5 bg-amber-500/5 rounded-xl border border-amber-500/10 space-y-2 text-xs">
-                <p className="text-white/90 leading-relaxed font-medium">{pendingAction.description}</p>
+                <p className="text-text-primary leading-relaxed font-medium">{pendingAction.description}</p>
                 {pendingAction.details && (
                   <p className="text-text-secondary leading-relaxed pt-1 border-t border-white/5">
                     {pendingAction.details}
@@ -1044,12 +1044,12 @@ export const PortfolioDataManagerModal: React.FC<Props> = ({ isOpen, onClose, on
 
               {/* Physical file checkbox for statement deletion */}
               {pendingAction.type === 'DELETE_STATEMENT' && (
-                <label className="flex items-center gap-2 text-xs text-text-secondary hover:text-white cursor-pointer select-none">
+                <label className="flex items-center gap-2 text-xs text-text-secondary hover:text-text-primary cursor-pointer select-none">
                   <input
                     type="checkbox"
                     checked={deletePhysicalFile}
                     onChange={(e) => setDeletePhysicalFile(e.target.checked)}
-                    className="rounded bg-white/10 border-white/20 text-emerald-500 focus:ring-0"
+                    className="rounded bg-[var(--color-white-10)] border-[var(--color-white-20)] text-emerald-500 focus:ring-0"
                   />
                   <span>Also delete source PDF file from disk if present</span>
                 </label>
@@ -1059,7 +1059,7 @@ export const PortfolioDataManagerModal: React.FC<Props> = ({ isOpen, onClose, on
                 <button
                   onClick={() => setPendingAction(null)}
                   disabled={confirming}
-                  className="px-4 py-2 rounded-xl text-xs font-semibold text-text-secondary hover:text-white bg-white/5 hover:bg-white/10 transition-colors"
+                  className="px-4 py-2 rounded-xl text-xs font-semibold text-text-secondary hover:text-text-primary bg-[var(--color-white-5)] hover:bg-[var(--color-white-10)] transition-colors"
                 >
                   Cancel / Keep Editing
                 </button>

@@ -126,7 +126,7 @@ const Stat = ({
   <div className="bg-[var(--color-white-5)] border border-[var(--color-white-10)] rounded-xl p-4">
     <p className="text-xs font-semibold uppercase tracking-wider text-text-secondary">{label}</p>
     <p
-      className={`mt-1 text-xl font-bold font-mono tabular-nums ${
+      className={`mt-1 text-xl font-bold font-mono tabular-nums break-words ${
         tone === 'good' ? 'text-emerald-400' : tone === 'bad' ? 'text-danger' : 'text-text-primary'
       }`}
     >
