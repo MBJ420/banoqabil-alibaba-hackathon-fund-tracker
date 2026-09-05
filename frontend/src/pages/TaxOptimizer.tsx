@@ -5,45 +5,45 @@ import { useToast } from '../components/Toast';
 import FeatureInfoModal, { type FeatureGuideContent } from '../components/FeatureInfoModal';
 
 const TAX_GUIDE: FeatureGuideContent = {
-  title: 'Pakistan Capital Gains & Tax Optimizer',
-  subtitle: 'Income Tax Ordinance 2001 (Updated per Finance Act 2024) • Section 37A & Section 63',
-  badge: 'FBR Finance Act 2024 Compliance',
-  overview: 'This optimizer accurately reflects current Pakistan Federal Board of Revenue (FBR) regulations under the Finance Act 2024. It models Section 37A Capital Gains Tax (CGT) on mutual fund redemptions, Section 37A(5) capital loss offsetting, and calculates authentic Section 63 tax credits for Voluntary Pension Schemes (VPS).',
+  title: 'How Mutual Fund Tax Works in Pakistan',
+  subtitle: 'Simple explanation of FBR tax rules for Pakistani investors (Finance Act 2024)',
+  badge: 'FBR Tax Guide 2024-25',
+  overview: 'In Pakistan, mutual funds are taxed on profits only. This tool helps you understand: (1) what tax you owe on your profits, (2) how losses save you money, and (3) how putting money in a retirement pension fund cuts your salary income tax.',
   howToUse: [
-    'Toggle your Taxpayer Status (Active Filer vs Non-Filer) — Non-Filers face an immediate 100% tax penalty (30% vs 15%).',
-    'Review Realized Gains & Losses: Add redemption transactions. Capital losses legally offset capital gains within the same tax year (Section 37A(5)).',
-    'Review Unrealized Portfolio Gains: View estimated tax withholding if you liquidate your current active holdings today.',
-    'Calculate Section 63 VPS Rebate: Enter your taxable income and pension contribution (e.g. Meezan Tahaffuz Pension Fund) to see your direct income tax deduction using official FBR salary slabs.',
-    'Export FBR Annexure: Download a formatted text statement for your annual tax return planning.'
+    'Choose Filer or Non-Filer: Filers pay 15% tax on profits. Non-Filers are penalized with double tax (30%).',
+    'Withdrawn Funds (Profit & Loss): Enter funds you sold. If you made a loss on one fund, it cancels out your profit from another so you pay less tax overall.',
+    'Cash Out Calculator: See how much cash actually lands in your bank account after tax if you withdraw your current funds today.',
+    'Pension Tax Discount: If you invest in an approved Pension Fund (like Meezan Tahaffuz Pension Fund), see how much money you save on your annual salary tax.',
+    'Download Tax Summary: Get a clean document to hand to your tax filer / accountant or keep for your records.'
   ],
   mathExplanation: [
     {
-      formulaName: 'Section 37A Capital Gains Tax on Mutual Funds (Finance Act 2024)',
-      formula: 'CGT = Net_Capital_Gain × (IsFiler ? 15% : 30%)',
-      description: 'Under current FBR law, mutual fund redemptions are subject to a flat 15% withholding for Active Filers and 30% for Non-Filers. The legacy 12-month 0% exemption was abolished in recent Finance Acts.'
+      formulaName: 'Tax is Only on Profit (Not Your Original Money)',
+      formula: 'Tax = Profit × (Filer: 15% | Non-Filer: 30%)',
+      description: 'You only pay tax on the profit you earned, never on your original investment. For example, if you put in Rs 100,000 and it grew to Rs 120,000, tax is charged only on the Rs 20,000 profit.'
     },
     {
-      formulaName: 'Section 37A(5) Capital Loss Offsetting',
-      formula: 'Net_Capital_Gain = Max(0, Total_Gains - Total_Losses)',
-      description: 'Capital losses incurred on mutual funds or listed securities in a tax year can legally offset capital gains realized in the same fiscal year (July 1 – June 30).'
+      formulaName: 'Losses Cancel Out Profits (Tax Loss Offsetting)',
+      formula: 'Taxable Profit = Total Profits - Total Losses',
+      description: 'Under FBR rules, if Fund A made Rs 50,000 profit and Fund B lost Rs 20,000 in the same year, you only pay tax on the remaining Rs 30,000. Losses reduce your tax.'
     },
     {
-      formulaName: 'Section 63 Voluntary Pension Scheme (VPS) Tax Credit',
-      formula: 'Tax_Credit = (Tax_Liability / Taxable_Income) × Min(Contribution, Cap% × Taxable_Income)',
-      description: 'A direct credit against your annual income tax for contributing to SECP-approved pension schemes (e.g. MTPF, HBL-IPF). Standard cap is 20% of taxable income (increasing up to 50% for individuals over age 40).'
+      formulaName: 'Pension Fund Tax Discount (Section 63)',
+      formula: 'Tax Discount = (Your Salary Tax ÷ Your Salary) × Pension Investment',
+      description: 'The government gives you a direct cashback / rebate on your salary income tax if you save money in SECP-approved pension funds (e.g. Meezan MTPF, HBL Islamic Pension).'
     },
     {
-      formulaName: 'Section 156A Retirement Exemption',
-      formula: 'Tax_Free_Lump_Sum = 50% × Accumulated_Pension_Balance',
-      description: 'Upon reaching retirement age (60–70), an investor can legally withdraw up to 50% of their accumulated pension balance completely tax-free.'
+      formulaName: '50% Tax-Free Cash at Retirement',
+      formula: 'Tax-Free Cash = 50% of Total Pension Balance',
+      description: 'When you reach retirement age (60 to 70), you can legally withdraw half of your accumulated pension balance completely tax-free.'
     }
   ],
   proTips: [
-    'Active Filer (ATL) Status is Critical: Filers pay 15% on mutual fund gains; Non-Filers pay 30%. Being on the FBR Active Taxpayer List saves you 50% on all investment taxes.',
-    'Tax Loss Harvesting Before June 30: If you have underperforming funds, realizing the loss before June 30 allows you to reduce your taxable capital gains on winning funds.',
-    'Maximize Section 63 VPS: Investing in Meezan or HBL Islamic Pension Funds directly reduces your annual income tax bracket while growing your retirement nest egg tax-deferred.'
+    'Always be an Active Filer: Being on the FBR Active Taxpayer List cuts your tax in half (15% instead of 30%).',
+    'Cancel Profits with Losses before June 30: If you have a fund that lost money, selling it before the fiscal year ends (June 30) lowers your net taxable profit for that year.',
+    'Use Pension Funds to Slash Salary Tax: If you pay heavy income tax on your salary, investing in a pension fund is one of the only legal ways to get a direct tax discount in Pakistan.'
   ],
-  disclaimer: 'Tax calculations are derived from the Income Tax Ordinance 2001 (Finance Act 2024) and are intended for estimation and planning. Actual tax withheld by Asset Management Companies (AMCs) depends on their official withholding certificates and your year-end FBR Iris declaration.'
+  disclaimer: 'Calculations are based on the Pakistan Income Tax Ordinance (Finance Act 2024). Actual tax deducted upon withdrawal is handled by the fund management company (AMC).'
 };
 
 // Current FBR Rates under Finance Act 2024
@@ -252,13 +252,13 @@ export default function TaxOptimizer() {
             </div>
             <div>
               <div className="flex flex-wrap items-center gap-2">
-                <h2 className="text-2xl font-bold tracking-tight text-text-primary">Capital Gains & Tax Optimizer</h2>
+                <h2 className="text-2xl font-bold tracking-tight text-text-primary">Mutual Fund Tax Calculator</h2>
                 <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                  FBR Finance Act 2024 Code
+                  Pakistan Tax Rules (2024-25)
                 </span>
               </div>
               <p className="text-sm text-text-secondary">
-                Accurate Pakistan FBR mutual fund taxation: 15% Filer CGT, loss offsetting, and Section 63 pension rebates.
+                Calculate tax on your mutual fund profits, offset your losses, and check your pension tax discount.
               </p>
             </div>
           </div>
@@ -266,17 +266,17 @@ export default function TaxOptimizer() {
           <button
             onClick={() => setIsInfoOpen(true)}
             className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-surface border border-[var(--color-white-10)] hover:border-emerald-500/50 text-xs font-semibold text-text-secondary hover:text-emerald-400 transition-all shadow-sm shrink-0 cursor-pointer"
-            title="Learn how Pakistani mutual fund tax law works"
+            title="Learn how mutual fund taxes work in simple terms"
           >
             <HelpCircle size={15} className="text-emerald-400" />
-            <span>FBR Tax Law Guide</span>
+            <span>How Tax Works (Simple Guide)</span>
           </button>
         </div>
 
         {/* Filer Status Bar */}
         <div className="flex flex-wrap items-center justify-between gap-4 bg-surface border border-[var(--color-white-5)] rounded-2xl p-4">
           <div className="flex items-center gap-3">
-            <span className="text-sm font-semibold text-text-primary">FBR Taxpayer Status:</span>
+            <span className="text-sm font-semibold text-text-primary">Are you an Active Tax Filer?</span>
             <div className="flex gap-2">
               <button
                 onClick={() => setIsFiler(true)}
@@ -286,7 +286,7 @@ export default function TaxOptimizer() {
                     : 'bg-[var(--color-white-5)] text-text-secondary border-[var(--color-white-10)] hover:border-white/30'
                 }`}
               >
-                Active Filer (15% CGT)
+                Yes, Active Filer (15% Tax)
               </button>
               <button
                 onClick={() => setIsFiler(false)}
@@ -296,7 +296,7 @@ export default function TaxOptimizer() {
                     : 'bg-[var(--color-white-5)] text-text-secondary border-[var(--color-white-10)] hover:border-white/30'
                 }`}
               >
-                Non-Filer (30% CGT)
+                No, Non-Filer (30% Double Tax)
               </button>
             </div>
           </div>
@@ -304,38 +304,38 @@ export default function TaxOptimizer() {
           <div className="flex items-center gap-2 text-xs font-medium">
             {isFiler ? (
               <span className="text-emerald-400 flex items-center gap-1.5 bg-emerald-500/10 px-3 py-1 rounded-lg border border-emerald-500/20">
-                <ShieldCheck size={14} /> Filer Advantage: 50% Tax Reduction Applied
+                <ShieldCheck size={14} /> Filer Benefit: You save 50% on tax by being an Active Filer
               </span>
             ) : (
               <span className="text-danger flex items-center gap-1.5 bg-danger/10 px-3 py-1 rounded-lg border border-danger/20">
-                <AlertCircle size={14} /> 100% Non-Filer Punitive Tax Surcharge Enforced
+                <AlertCircle size={14} /> Non-Filer Penalty: You pay double tax (30%) on profits
               </span>
             )}
           </div>
         </div>
 
-        {/* Section 1: Realized Gains & Loss Offsetting */}
+        {/* Section 1: Withdrawn Funds (Profit & Loss Calculator) */}
         <section className="bg-surface border border-[var(--color-white-5)] rounded-2xl p-6 space-y-5">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <div className="flex items-center gap-2">
                 <TrendingUp size={18} className="text-emerald-400" />
-                <h3 className="text-lg font-bold">Realized Capital Gains & Loss Harvesting</h3>
+                <h3 className="text-lg font-bold">Withdrawn Funds (Profits & Losses)</h3>
               </div>
               <p className="text-xs text-text-secondary mt-1">
-                Under FBR Section 37A(5), capital losses in a fiscal year legally offset capital gains to lower your tax liability.
+                Enter funds you already sold. If you suffered a loss on one fund, it automatically cancels out profit from another so you pay less tax.
               </p>
             </div>
             <button
               onClick={() =>
                 setRows((rs) => [
                   ...rs,
-                  { id: rowSeq++, name: 'Fund Redemption', cost: 100_000, value: 120_000 },
+                  { id: rowSeq++, name: 'Sold Fund', cost: 100_000, value: 120_000 },
                 ])
               }
               className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white transition-colors cursor-pointer shrink-0"
             >
-              + Add Transaction
+              + Add Withdrawn Fund
             </button>
           </div>
 
@@ -346,7 +346,7 @@ export default function TaxOptimizer() {
               return (
                 <div key={r.id} className="grid grid-cols-1 md:grid-cols-12 gap-3 items-end p-3 rounded-xl bg-[var(--color-white-2)] border border-[var(--color-white-5)]">
                   <div className="md:col-span-5">
-                    <span className="text-xs font-medium text-text-secondary">Fund / Transaction Name</span>
+                    <span className="text-xs font-medium text-text-secondary">Fund Name</span>
                     <input
                       value={r.name}
                       onChange={(e) => updateRow(r.id, { name: e.target.value })}
@@ -354,13 +354,13 @@ export default function TaxOptimizer() {
                     />
                   </div>
                   <div className="md:col-span-2">
-                    <Field label="Cost (PKR)" value={r.cost} onChange={(v) => updateRow(r.id, { cost: v })} suffix="PKR" step={5000} />
+                    <Field label="Original Investment" value={r.cost} onChange={(v) => updateRow(r.id, { cost: v })} suffix="PKR" step={5000} />
                   </div>
                   <div className="md:col-span-2">
-                    <Field label="Sale Value (PKR)" value={r.value} onChange={(v) => updateRow(r.id, { value: v })} suffix="PKR" step={5000} />
+                    <Field label="Amount Withdrawn" value={r.value} onChange={(v) => updateRow(r.id, { value: v })} suffix="PKR" step={5000} />
                   </div>
                   <div className="md:col-span-2">
-                    <p className="text-xs font-medium text-text-secondary">Net Gain / (Loss)</p>
+                    <p className="text-xs font-medium text-text-secondary">Your Profit / (Loss)</p>
                     <p className={`mt-2 text-sm font-bold font-mono tabular-nums ${isProfit ? 'text-emerald-400' : 'text-danger'}`}>
                       {isProfit ? '+' : ''}{fmtPKR(diff)}
                     </p>
@@ -381,83 +381,83 @@ export default function TaxOptimizer() {
 
           {/* Realized Summary Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 pt-2">
-            <Stat label="Gross Gains" value={fmtPKR(grossRealizedGains)} tone="good" />
-            <Stat label="Losses Harvested" value={fmtPKR(grossRealizedLosses)} sub="Offsets Gains (Sec 37A)" tone={grossRealizedLosses > 0 ? 'good' : 'default'} />
-            <Stat label="Net Taxable Gain" value={fmtPKR(netTaxableRealizedGain)} />
+            <Stat label="Total Profits" value={fmtPKR(grossRealizedGains)} tone="good" />
+            <Stat label="Losses Deducted" value={fmtPKR(grossRealizedLosses)} sub="Cancels out profit" tone={grossRealizedLosses > 0 ? 'good' : 'default'} />
+            <Stat label="Net Taxable Profit" value={fmtPKR(netTaxableRealizedGain)} sub="Tax applies to this amount only" />
             <Stat
-              label={`CGT Payable (${fmtPct(cgtRate)})`}
+              label={`Tax You Pay (${fmtPct(cgtRate)})`}
               value={fmtPKR(realizedCGT)}
-              sub={isFiler ? `Saved ${fmtPKR(filerBenefit)} vs Non-Filer` : 'Double tax penalty applies'}
+              sub={isFiler ? `You saved ${fmtPKR(filerBenefit)} by being a Filer!` : 'Double tax penalty applies'}
               tone={realizedCGT > 0 ? 'bad' : 'good'}
             />
           </div>
         </section>
 
-        {/* Section 2: Unrealized Portfolio Exit Simulation */}
+        {/* Section 2: If You Cash Out Today (Withdrawal Calculator) */}
         <section className="bg-surface border border-[var(--color-white-5)] rounded-2xl p-6 space-y-5">
           <div>
             <div className="flex items-center gap-2">
               <Landmark size={18} className="text-emerald-400" />
-              <h3 className="text-lg font-bold">Unrealized Portfolio Gains (Liquidation Simulation)</h3>
+              <h3 className="text-lg font-bold">If You Cash Out Today (Withdrawal Calculator)</h3>
             </div>
             <p className="text-xs text-text-secondary mt-1">
-              Estimated tax withheld if you redeem your active mutual fund portfolio today.
+              Shows how much tax will be deducted and the exact cash that lands in your bank if you sell your active funds today.
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Field label="Portfolio Cost Basis" value={unrealCost} onChange={setUnrealCost} suffix="PKR" step={25000} />
-            <Field label="Current Market Value" value={unrealValue} onChange={setUnrealValue} suffix="PKR" step={25000} />
+            <Field label="Total Money You Invested" value={unrealCost} onChange={setUnrealCost} suffix="PKR" step={25000} />
+            <Field label="Current Value of Funds Today" value={unrealValue} onChange={setUnrealValue} suffix="PKR" step={25000} />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <Stat label="Unrealized Profit" value={fmtPKR(unrealGain)} tone="good" />
+            <Stat label="Total Profit So Far" value={fmtPKR(unrealGain)} tone="good" sub="Paper profit on active funds" />
             <Stat
-              label={`Estimated CGT at Exit (${fmtPct(cgtRate)})`}
+              label={`Estimated Tax Deducted (${fmtPct(cgtRate)})`}
               value={fmtPKR(unrealizedCGT)}
               tone={unrealizedCGT > 0 ? 'bad' : 'good'}
-              sub={isFiler ? 'Flat 15% under Finance Act 2024' : '30% Non-Filer rate'}
+              sub={isFiler ? '15% tax on profit for Filers' : '30% double tax for Non-Filers'}
             />
-            <Stat label="Net After-Tax Proceeds" value={fmtPKR(unrealValue - unrealizedCGT)} />
+            <Stat label="Cash Landing in Your Bank" value={fmtPKR(unrealValue - unrealizedCGT)} sub="Your investment + profit minus tax" />
           </div>
 
           <div className="flex items-start gap-2 text-xs text-text-secondary bg-[var(--color-white-2)] border border-[var(--color-white-5)] rounded-xl p-3">
             <Info size={14} className="mt-0.5 text-emerald-400 shrink-0" />
             <p>
-              <strong>FBR Statutory Notice:</strong> Under Finance Act 2024, holding mutual funds beyond 12 months no longer exempts gains from CGT. Both short-term and long-term redemptions are subject to 15% withholding for Filers.
+              <strong>Good to know:</strong> Under Pakistani law (Finance Act 2024), tax is 15% on your profit (for Filers) regardless of how long you kept the money. (The old 1-year tax-free exemption no longer applies).
             </p>
           </div>
         </section>
 
-        {/* Section 3: Section 63 VPS Pension Tax Credit */}
+        {/* Section 3: Retirement Pension Tax Discount */}
         <section className="bg-surface border border-[var(--color-white-5)] rounded-2xl p-6 space-y-5">
           <div>
             <div className="flex items-center gap-2">
               <Receipt size={18} className="text-emerald-400" />
-              <h3 className="text-lg font-bold">Section 63 Voluntary Pension Scheme (VPS) Tax Credit</h3>
+              <h3 className="text-lg font-bold">Retirement Pension Tax Discount (Save on Salary Tax)</h3>
             </div>
             <p className="text-xs text-text-secondary mt-1">
-              Genuine Pakistani tax deduction: Contributing to SECP-approved pension schemes (e.g. Meezan Tahaffuz Pension Fund - MTPF, HBL Islamic Pension Fund) directly reduces your annual income tax.
+              Government incentive: If you put savings into an approved Pakistani Pension Fund (e.g. Meezan Tahaffuz Pension Fund or HBL Islamic Pension Fund), you get a direct cashback/discount on your annual salary tax!
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Field label="Annual Taxable Income" value={taxableIncome} onChange={setTaxableIncome} suffix="PKR" step={50000} />
-            <Field label="Annual VPS Contribution" value={vpsContribution} onChange={setVpsContribution} suffix="PKR" step={10000} />
-            <Field label="Investor Age (Years)" value={investorAge} onChange={setInvestorAge} suffix="yrs" step={1} />
+            <Field label="Your Annual Salary / Income" value={taxableIncome} onChange={setTaxableIncome} suffix="PKR" step={50000} />
+            <Field label="Money Put in Pension Fund This Year" value={vpsContribution} onChange={setVpsContribution} suffix="PKR" step={10000} />
+            <Field label="Your Age (Years)" value={investorAge} onChange={setInvestorAge} suffix="yrs" step={1} />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-            <Stat label="Salary Tax (FBR Slabs)" value={fmtPKR(baselineSalaryTax)} sub={`Avg Rate: ${fmtPct(averageTaxRate)}`} />
-            <Stat label="Max VPS Allowed" value={fmtPKR(maxEligibleVpsContribution)} sub={`Cap: ${(vpsCapPct * 100).toFixed(0)}% of income`} />
-            <Stat label="Direct Tax Rebate" value={fmtPKR(vpsTaxRebate)} tone="good" sub="Subtracted from income tax" />
-            <Stat label="Net Annual Tax Payable" value={fmtPKR(netSalaryTaxAfterVps)} tone={netSalaryTaxAfterVps > 0 ? 'bad' : 'good'} />
+            <Stat label="Normal Annual Salary Tax" value={fmtPKR(baselineSalaryTax)} sub={`Avg Rate: ${fmtPct(averageTaxRate)}`} />
+            <Stat label="Max Pension Eligible for Discount" value={fmtPKR(maxEligibleVpsContribution)} sub={`Allowed up to ${(vpsCapPct * 100).toFixed(0)}% of income`} />
+            <Stat label="Tax You Save (Discount)" value={fmtPKR(vpsTaxRebate)} tone="good" sub="Directly deducted from your tax bill" />
+            <Stat label="Reduced Tax You Pay" value={fmtPKR(netSalaryTaxAfterVps)} tone={netSalaryTaxAfterVps > 0 ? 'bad' : 'good'} sub="Final salary tax after pension discount" />
           </div>
 
           <div className="flex items-start gap-2 text-xs text-text-secondary bg-[var(--color-white-2)] border border-[var(--color-white-5)] rounded-xl p-3">
             <ShieldCheck size={14} className="mt-0.5 text-emerald-400 shrink-0" />
             <p>
-              <strong>Section 156A Retirement Benefit:</strong> When you reach retirement age (60–70), up to <strong>50% of your accumulated VPS balance is 100% tax-free</strong> upon withdrawal.
+              <strong>Retirement Bonus:</strong> When you reach retirement age (60+), up to <strong>50% of your accumulated pension can be withdrawn completely tax-free</strong>.
             </p>
           </div>
         </section>
@@ -468,11 +468,11 @@ export default function TaxOptimizer() {
             onClick={downloadAnnexure}
             className="flex items-center gap-2 px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold transition-colors shadow-md shadow-emerald-900/30 cursor-pointer"
           >
-            <Download size={16} /> Download FBR Tax Annexure (.txt)
+            <Download size={16} /> Download Tax Summary (.txt)
           </button>
 
           <span className="text-xs text-text-secondary">
-            Compliant with FBR Income Tax Ordinance 2001 (Finance Act 2024).
+            Calculations based on Pakistan FBR Income Tax Ordinance (Finance Act 2024).
           </span>
         </div>
       </div>
