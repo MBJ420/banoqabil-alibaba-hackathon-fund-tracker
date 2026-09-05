@@ -53,6 +53,7 @@ interface OutperformerData {
   fund_name: string;
   bank: string;
   fund_type: string;
+  is_pension?: boolean;
   composite_score: number;
   gap: number;
   data_source: string;
@@ -67,6 +68,7 @@ interface OutperformerResult {
   user_fund: string;
   user_fund_short: string | null;
   user_fund_type: string;
+  is_pension?: boolean;
   user_composite_score: number;
   user_data_source: string;
   no_significant_underperformance: boolean;
@@ -205,9 +207,9 @@ export default function PortfolioSuggestions() {
         ) : (
           <>
             {/* Diversification Risk Section */}
-            <section className="bg-surface border border-white/5 rounded-2xl p-6">
-              <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-                <ShieldCheck size={20} className="text-neon-purple" />
+            <section className="bg-surface border border-[var(--color-white-10)] rounded-2xl p-6 shadow-sm">
+              <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-text-primary">
+                <ShieldCheck size={20} className="text-emerald-600 dark:text-emerald-400" />
                 Diversification & Risk Health
               </h3>
               
@@ -215,8 +217,8 @@ export default function PortfolioSuggestions() {
                 <div className={`p-4 rounded-xl border flex items-start gap-3 ${SEVERITY_STYLES.success}`}>
                   <div className="shrink-0 mt-0.5">{SEVERITY_ICONS.success}</div>
                   <div>
-                    <h4 className="font-semibold text-white">Portfolio Balanced</h4>
-                    <p className="text-sm opacity-90 mt-1">Your asset allocation shows no immediate concentration risks.</p>
+                    <h4 className="font-semibold text-text-primary">Portfolio Balanced</h4>
+                    <p className="text-sm text-text-secondary mt-1">Your asset allocation shows no immediate concentration risks.</p>
                   </div>
                 </div>
               ) : (
@@ -225,8 +227,8 @@ export default function PortfolioSuggestions() {
                     <div key={alert.id} className={`p-4 rounded-xl border flex items-start gap-3 ${SEVERITY_STYLES[alert.severity]}`}>
                       <div className="shrink-0 mt-0.5">{SEVERITY_ICONS[alert.severity]}</div>
                       <div>
-                        <h4 className="font-semibold text-white">{alert.title}</h4>
-                        <p className="text-sm opacity-90 mt-1">{alert.message}</p>
+                        <h4 className="font-semibold text-text-primary">{alert.title}</h4>
+                        <p className="text-sm text-text-secondary mt-1">{alert.message}</p>
                       </div>
                     </div>
                   ))}
@@ -320,9 +322,9 @@ export default function PortfolioSuggestions() {
                           <span className={`text-xs font-bold mt-2 ${scoreColor}`}>{diagData.risk_label}</span>
                         </div>
                         {/* Summary */}
-                        <div className="flex-1 flex flex-col justify-center bg-black/20 rounded-2xl border border-white/5 p-4">
+                        <div className="flex-1 flex flex-col justify-center bg-surface-highlight/50 dark:bg-white/5 rounded-2xl border border-[var(--color-white-10)] p-4">
                           <p className="text-xs text-text-secondary uppercase tracking-wider mb-1 font-semibold">AI Analysis</p>
-                          <p className="text-sm text-white/90 leading-relaxed">{diagData.summary}</p>
+                          <p className="text-sm text-text-primary leading-relaxed">{diagData.summary}</p>
                         </div>
                       </div>
 
@@ -330,7 +332,7 @@ export default function PortfolioSuggestions() {
                       {diagData.strengths.length > 0 && (
                         <div className="flex flex-wrap gap-2">
                           {diagData.strengths.map((s, i) => (
-                            <span key={i} className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-full">
+                            <span key={i} className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-full font-medium">
                               <CheckCircle2 size={11} />
                               {s}
                             </span>
@@ -345,26 +347,26 @@ export default function PortfolioSuggestions() {
                           <div className="space-y-3">
                             {diagData.recommendations.map((rec, i) => {
                               const typeColor: Record<string, string> = {
-                                rebalance:       'text-yellow-400 bg-yellow-500/10 border-yellow-500/30',
-                                diversify:       'text-blue-400 bg-blue-500/10 border-blue-500/30',
-                                reduce_risk:     'text-red-400 bg-red-500/10 border-red-500/30',
-                                increase_growth: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30',
-                                tax_note:        'text-violet-400 bg-violet-500/10 border-violet-500/30',
+                                rebalance:       'text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/30',
+                                diversify:       'text-blue-600 dark:text-blue-400 bg-blue-500/10 border-blue-500/30',
+                                reduce_risk:     'text-red-600 dark:text-red-400 bg-red-500/10 border-red-500/30',
+                                increase_growth: 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/30',
+                                tax_note:        'text-violet-600 dark:text-violet-400 bg-violet-500/10 border-violet-500/30',
                               };
                               const typeLabel: Record<string, string> = {
                                 rebalance: 'Rebalance', diversify: 'Diversify',
                                 reduce_risk: 'Reduce Risk', increase_growth: 'Growth Opportunity', tax_note: 'Tax Note',
                               };
-                              const cls = typeColor[rec.type] ?? 'text-text-secondary bg-white/5 border-white/10';
+                              const cls = typeColor[rec.type] ?? 'text-text-secondary bg-[var(--color-white-5)] border-[var(--color-white-10)]';
                               return (
-                                <div key={i} className="flex gap-3 bg-black/20 rounded-xl border border-white/5 p-4">
+                                <div key={i} className="flex gap-3 bg-surface-highlight/50 dark:bg-white/5 rounded-xl border border-[var(--color-white-10)] p-4 shadow-xs">
                                   <div className={`text-xs font-bold px-2 py-0.5 rounded-md border h-fit shrink-0 mt-0.5 ${cls}`}>
                                     {rec.priority}
                                   </div>
                                   <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2 flex-wrap mb-1">
-                                      <p className="font-semibold text-sm text-white">{rec.title}</p>
-                                      <span className={`text-[10px] px-2 py-0.5 rounded-full border ${cls}`}>
+                                      <p className="font-semibold text-sm text-text-primary">{rec.title}</p>
+                                      <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full border ${cls}`}>
                                         {typeLabel[rec.type] ?? rec.type}
                                       </span>
                                     </div>
@@ -392,10 +394,10 @@ export default function PortfolioSuggestions() {
             </section>
 
             {/* Outperformance Intelligence Section */}
-            <section className="bg-surface border border-white/5 rounded-2xl p-6">
+            <section className="bg-surface border border-[var(--color-white-10)] rounded-2xl p-6 shadow-sm">
               <div className="mb-6">
-                <h3 className="text-lg font-bold flex items-center gap-2">
-                  <TrendingUp size={20} className="text-neon-purple" />
+                <h3 className="text-lg font-bold flex items-center gap-2 text-text-primary">
+                  <TrendingUp size={20} className="text-emerald-600 dark:text-emerald-400" />
                   Fund Outperformance Intelligence
                 </h3>
                 <p className="text-xs text-text-secondary mt-1">
@@ -408,18 +410,31 @@ export default function PortfolioSuggestions() {
               ) : (
                 <div className="space-y-6">
                   {outperformersData?.results.map((res, idx) => (
-                    <div key={idx} className="border border-white/10 rounded-xl overflow-hidden bg-black/20">
+                    <div key={idx} className="border border-[var(--color-white-10)] rounded-2xl overflow-hidden bg-surface-highlight/30 dark:bg-white/5 shadow-xs">
                       {/* User Fund Header */}
-                      <div className="p-4 bg-white/5 border-b border-white/10 flex flex-wrap justify-between items-center gap-4">
+                      <div className="p-4 bg-surface-highlight/70 dark:bg-white/5 border-b border-[var(--color-white-10)] flex flex-wrap justify-between items-center gap-4">
                         <div>
-                          <p className="text-xs text-text-secondary uppercase tracking-wider mb-1">Your Fund</p>
-                          <h4 className="font-bold text-white flex items-center gap-2">
+                          <p className="text-[10px] text-text-secondary uppercase font-bold tracking-wider mb-1">Your Fund</p>
+                          <h4 className="font-bold text-text-primary text-base flex items-center gap-2">
                             {res.user_fund} 
-                            {res.user_fund_short && <span className="text-xs text-text-secondary bg-white/10 px-2 py-0.5 rounded-full">{res.user_fund_short}</span>}
+                            {res.user_fund_short && (
+                              <span className="text-xs font-mono text-text-secondary bg-[var(--color-white-10)] px-2 py-0.5 rounded-md border border-[var(--color-white-10)]">
+                                {res.user_fund_short}
+                              </span>
+                            )}
                           </h4>
-                          <div className="flex gap-2 mt-1">
-                            <span className="text-[10px] px-2 py-0.5 bg-neon-purple/20 text-neon-purple border border-neon-purple/30 rounded-md">{res.user_fund_type}</span>
-                            <span className="text-[10px] text-text-secondary">Average Return: {res.user_composite_score}%</span>
+                          <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                            <span className="text-[10px] font-semibold px-2.5 py-0.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 rounded-md">
+                              {res.user_fund_type}
+                            </span>
+                            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-md border ${
+                              res.is_pension 
+                                ? 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20' 
+                                : 'bg-sky-500/10 text-sky-700 dark:text-sky-400 border-sky-500/20'
+                            }`}>
+                              {res.is_pension ? 'VPS Pension Scheme' : 'Open-End Mutual Fund'}
+                            </span>
+                            <span className="text-[10px] text-text-secondary">Average Return: <strong className="font-mono text-text-primary">{res.user_composite_score}%</strong></span>
                           </div>
                         </div>
                       </div>
@@ -427,20 +442,22 @@ export default function PortfolioSuggestions() {
                       {/* Peer List */}
                       <div className="p-4">
                         {res.no_significant_underperformance ? (
-                          <div className="flex items-center gap-2 text-success text-sm py-2">
+                          <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 text-sm py-2 font-medium">
                             <ShieldCheck size={16} /> No significant underperforming gap found against peer funds.
                           </div>
                         ) : (
                           <div className="space-y-4">
                             {res.top_outperformers.map((peer, pIdx) => (
-                              <div key={pIdx} className="bg-white/5 rounded-xl p-4 border border-white/5 hover:border-neon-purple/30 transition-colors">
+                              <div key={pIdx} className="bg-surface rounded-xl p-4 border border-[var(--color-white-10)] hover:border-emerald-500/40 transition-all shadow-xs">
                                 <div className="flex flex-wrap justify-between items-start gap-4 mb-3">
                                   <div>
                                     <div className="flex items-center gap-2">
-                                      <span className="text-xs font-bold text-black bg-neon-purple px-1.5 py-0.5 rounded">#{peer.rank}</span>
-                                      <h5 className="font-bold text-white">{peer.fund_name}</h5>
+                                      <span className="text-xs font-bold text-white bg-emerald-600 px-2 py-0.5 rounded-md shadow-xs">#{peer.rank}</span>
+                                      <h5 className="font-bold text-text-primary text-sm">{peer.fund_name}</h5>
                                     </div>
-                                    <p className="text-xs text-text-secondary mt-1">{peer.bank} • {peer.fund_type} • Outperforms by <strong className="text-success">+{peer.gap}%</strong> gap</p>
+                                    <p className="text-xs text-text-secondary mt-1">
+                                      {peer.bank} • {peer.fund_type} • <span className={`font-medium ${peer.is_pension ? 'text-amber-600 dark:text-amber-400' : 'text-sky-600 dark:text-sky-400'}`}>{peer.is_pension ? 'VPS Pension' : 'Mutual Fund'}</span> • Outperforms by <strong className="text-emerald-600 dark:text-emerald-400 font-bold">+{peer.gap}%</strong> gap
+                                    </p>
                                   </div>
                                 </div>
                                 
@@ -451,11 +468,13 @@ export default function PortfolioSuggestions() {
                                     const pPeer = peer.breakdown[period as keyof typeof peer.breakdown].peer;
                                     const periodLabel = period.toUpperCase();
                                     return (
-                                      <div key={period} className="bg-black/30 rounded-lg p-3 text-center flex flex-col justify-center">
-                                        <div className="text-[10px] text-text-secondary mb-2 uppercase tracking-wide font-semibold">{periodLabel}</div>
-                                        <div className="flex flex-col gap-1 items-center text-xs">
-                                          <div className="text-text-secondary">Your Fund: {pUser !== null ? `${pUser}%` : '--'}</div>
-                                          <div className={`font-semibold ${pPeer !== null && pUser !== null && pPeer > pUser ? 'text-success' : 'text-white'}`}>Peer: {pPeer !== null ? `${pPeer}%` : '--'}</div>
+                                      <div key={period} className="bg-surface-highlight/70 dark:bg-white/5 border border-[var(--color-white-10)] rounded-xl p-3 text-center flex flex-col justify-center">
+                                        <div className="text-[10px] text-text-secondary mb-1.5 uppercase tracking-wider font-bold">{periodLabel}</div>
+                                        <div className="flex flex-col gap-0.5 items-center text-xs">
+                                          <div className="text-text-secondary text-[11px]">Your Fund: <span className="font-mono font-medium text-text-primary">{pUser !== null ? `${pUser}%` : '--'}</span></div>
+                                          <div className={`font-mono text-xs font-bold ${pPeer !== null && pUser !== null && pPeer > pUser ? 'text-emerald-600 dark:text-emerald-400' : 'text-text-primary'}`}>
+                                            Peer: {pPeer !== null ? `${pPeer}%` : '--'}
+                                          </div>
                                         </div>
                                       </div>
                                     );
@@ -464,7 +483,7 @@ export default function PortfolioSuggestions() {
                                 
                                 {/* Data Source Warning */}
                                 {peer.data_source === 'mufap_only' && (
-                                  <div className="mt-3 flex items-start gap-2 text-[10px] text-warning/80 bg-warning/5 p-2 rounded border border-warning/10">
+                                  <div className="mt-3 flex items-start gap-2 text-[10px] text-amber-700 dark:text-amber-400 bg-amber-500/10 p-2.5 rounded-xl border border-amber-500/20">
                                     <Zap size={12} className="shrink-0 mt-0.5" />
                                     <span>Using MUFAP data only. Upload latest FMR PDF for more comprehensive figures.</span>
                                   </div>

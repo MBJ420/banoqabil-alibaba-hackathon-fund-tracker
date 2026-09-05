@@ -118,6 +118,85 @@
   background: var(--color-gold);
 }
 
+/* ApexCharts Theme & Tooltip Overrides */
+.apexcharts-tooltip {
+  background: var(--color-surface) !important;
+  color: var(--color-text-primary) !important;
+  border: 1px solid var(--color-white-10) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.35) !important;
+  overflow: hidden !important;
+}
+
+.apexcharts-tooltip.apexcharts-theme-light,
+.apexcharts-tooltip.apexcharts-theme-dark {
+  background: var(--color-surface) !important;
+  color: var(--color-text-primary) !important;
+  border-color: var(--color-white-10) !important;
+}
+
+.apexcharts-tooltip .apexcharts-tooltip-title {
+  background: var(--color-surface-highlight) !important;
+  color: var(--color-text-primary) !important;
+  border-bottom: 1px solid var(--color-white-10) !important;
+  font-family: var(--font-sans) !important;
+  font-weight: 600 !important;
+  font-size: 11px !important;
+  padding: 6px 12px !important;
+}
+
+.apexcharts-tooltip .apexcharts-tooltip-series-group {
+  padding: 8px 12px !important;
+  background: var(--color-surface) !important;
+  color: var(--color-text-primary) !important;
+}
+
+.apexcharts-tooltip .apexcharts-tooltip-text {
+  color: var(--color-text-primary) !important;
+  font-family: var(--font-sans) !important;
+  font-size: 12px !important;
+}
+
+.apexcharts-tooltip .apexcharts-tooltip-text-y-label {
+  color: var(--color-text-secondary) !important;
+  font-weight: 500 !important;
+}
+
+.apexcharts-tooltip .apexcharts-tooltip-text-y-value {
+  color: var(--color-text-primary) !important;
+  font-weight: 700 !important;
+  font-family: var(--font-mono) !important;
+}
+
+.apexcharts-xaxistooltip,
+.apexcharts-yaxistooltip {
+  background: var(--color-surface) !important;
+  color: var(--color-text-primary) !important;
+  border: 1px solid var(--color-white-10) !important;
+  border-radius: 8px !important;
+}
+
+.apexcharts-toolbar svg {
+  fill: var(--color-text-secondary) !important;
+  transition: fill 0.2s ease;
+}
+
+.apexcharts-toolbar svg:hover {
+  fill: var(--color-text-primary) !important;
+}
+
+.apexcharts-menu {
+  background: var(--color-surface) !important;
+  border: 1px solid var(--color-white-10) !important;
+  color: var(--color-text-primary) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.25) !important;
+}
+
+.apexcharts-menu-item:hover {
+  background: var(--color-surface-highlight) !important;
+}
+
 @media print {
   @page {
     margin: 0.5in;

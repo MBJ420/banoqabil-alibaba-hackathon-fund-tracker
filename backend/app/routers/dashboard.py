@@ -597,6 +597,26 @@ def get_fund_outperformers(
         score = sum(available)
         return score / len(available)
         
+    def is_pension_fund(f: models.Fund) -> bool:
+        text = f"{f.name or ''} {f.short_name or ''} {f.category or ''} {f.fund_type or ''}".lower()
+        return any(k in text for k in ["pension", "vps", "mtpf", "sub fund", "sub-fund", "sub_fund"])
+
+    def get_effective_fund_type(f: models.Fund) -> Optional[str]:
+        if f.fund_type and f.fund_type.lower() != "unknown":
+            return f.fund_type
+        name_cat = f"{f.name or ''} {f.category or ''}".lower()
+        if any(k in name_cat for k in ["money market", "cash", "liquid"]):
+            return "Money Market"
+        if any(k in name_cat for k in ["income", "debt", "sovereign"]):
+            return "Income"
+        if any(k in name_cat for k in ["equity", "stock", "meezan islamic fund", "dividend yield", "index"]):
+            return "Equity"
+        if any(k in name_cat for k in ["balanced", "asset allocation"]):
+            return "Asset Allocation"
+        if any(k in name_cat for k in ["gold", "commodity"]):
+            return "Commodity"
+        return None
+
     def get_threshold(ftype: str) -> float:
         ft = (ftype or "").lower()
         if "money market" in ft: return 1.0
@@ -605,9 +625,10 @@ def get_fund_outperformers(
 
     results = []
     
-    # 3. For each user fund, find same-type peers
+    # 3. For each user fund, find same-type peers (segregating mutual funds vs pension schemes)
     for u_fund, holding in matched_user_funds.items():
-        if not u_fund.fund_type or u_fund.fund_type.lower() == "unknown":
+        u_type = get_effective_fund_type(u_fund)
+        if not u_type or u_type.lower() == "unknown":
             continue
             
         u_metrics = get_fund_metrics(u_fund)
@@ -616,9 +637,16 @@ def get_fund_outperformers(
         if u_composite is None:
             continue
             
-        threshold = get_threshold(u_fund.fund_type)
+        threshold = get_threshold(u_type)
+        is_u_pension = is_pension_fund(u_fund)
         
-        peers = [f for f in all_funds if f.id != u_fund.id and f.fund_type == u_fund.fund_type]
+        # Mutual funds are strictly compared with mutual funds; Pension sub-funds with pension sub-funds
+        peers = [
+            f for f in all_funds 
+            if f.id != u_fund.id 
+            and get_effective_fund_type(f) == u_type 
+            and is_pension_fund(f) == is_u_pension
+        ]
         
         outperformers = []
         for p in peers:
@@ -645,7 +673,8 @@ def get_fund_outperformers(
                 "rank": idx + 1,
                 "fund_name": op["fund_obj"].name,
                 "bank": op["fund_obj"].bank.name if op["fund_obj"].bank else "Unknown",
-                "fund_type": op["fund_obj"].fund_type,
+                "fund_type": op["fund_obj"].fund_type or u_type,
+                "is_pension": is_pension_fund(op["fund_obj"]),
                 "composite_score": round(op["composite"], 2),
                 "gap": round(op["gap"], 2),
                 "data_source": op["metrics"]["source"],
@@ -659,7 +688,8 @@ def get_fund_outperformers(
         results.append({
             "user_fund": u_fund.name,
             "user_fund_short": u_fund.short_name,
-            "user_fund_type": u_fund.fund_type,
+            "user_fund_type": u_type,
+            "is_pension": is_u_pension,
             "user_composite_score": round(u_composite, 2),
             "user_data_source": u_metrics["source"],
             "no_significant_underperformance": len(formatted_outperformers) == 0,

@@ -483,12 +483,12 @@ export const PortfolioDataManagerModal: React.FC<Props> = ({ isOpen, onClose, on
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Search by fund name, category, bank, or date (e.g. 2026-02)..."
-                    className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-2 text-xs text-white placeholder:text-text-secondary/50 focus:outline-none focus:border-emerald-500/50"
+                    className="w-full bg-[var(--color-white-5)] border border-[var(--color-white-10)] rounded-xl pl-10 pr-4 py-2 text-xs text-text-primary placeholder:text-text-secondary/50 focus:outline-none focus:border-emerald-500/50"
                   />
                   {searchQuery && (
                     <button
                       onClick={() => setSearchQuery('')}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary hover:text-white text-xs"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary hover:text-text-primary text-xs"
                     >
                       Clear
                     </button>
@@ -500,11 +500,11 @@ export const PortfolioDataManagerModal: React.FC<Props> = ({ isOpen, onClose, on
                   <select
                     value={selectedBankFilter}
                     onChange={(e) => setSelectedBankFilter(e.target.value)}
-                    className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500/50"
+                    className="bg-[var(--color-white-5)] border border-[var(--color-white-10)] rounded-xl px-3 py-2 text-xs text-text-primary focus:outline-none focus:border-emerald-500/50"
                   >
-                    <option value="ALL" className="bg-[#0f172a]">All Institutions</option>
+                    <option value="ALL" className="bg-surface text-text-primary">All Institutions</option>
                     {meta.institutions.map((b) => (
-                      <option key={b} value={b} className="bg-[#0f172a]">{b}</option>
+                      <option key={b} value={b} className="bg-surface text-text-primary">{b}</option>
                     ))}
                   </select>
                 </div>
@@ -517,9 +517,9 @@ export const PortfolioDataManagerModal: React.FC<Props> = ({ isOpen, onClose, on
                   <p className="text-xs">Loading portfolio ledger...</p>
                 </div>
               ) : filteredStatements.length === 0 ? (
-                <div className="border border-dashed border-white/10 rounded-2xl p-12 text-center text-text-secondary space-y-3">
+                <div className="border border-dashed border-[var(--color-white-10)] rounded-2xl p-12 text-center text-text-secondary space-y-3">
                   <Database size={36} className="mx-auto text-text-secondary/40" />
-                  <p className="text-sm font-semibold text-white">No statements found</p>
+                  <p className="text-sm font-semibold text-text-primary">No statements found</p>
                   <p className="text-xs max-w-sm mx-auto">
                     {searchQuery || selectedBankFilter !== 'ALL'
                       ? 'Try clearing your search filters to view your statements.'
@@ -538,20 +538,20 @@ export const PortfolioDataManagerModal: React.FC<Props> = ({ isOpen, onClose, on
                         className={`border rounded-2xl transition-all overflow-hidden ${
                           isEditing
                             ? 'border-emerald-500/50 bg-emerald-950/10 shadow-lg shadow-emerald-900/10'
-                            : 'border-white/5 bg-surface/40 hover:border-white/10'
+                            : 'border-[var(--color-white-10)] bg-[var(--color-white-5)] hover:border-emerald-500/30'
                         }`}
                       >
                         {/* Statement Summary Card Header */}
                         <div className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                           <div className="flex items-start sm:items-center gap-3">
-                            <div className="p-2.5 bg-white/5 rounded-xl text-emerald-400 border border-white/5 shrink-0 mt-1 sm:mt-0">
+                            <div className="p-2.5 bg-emerald-500/10 rounded-xl text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0 mt-1 sm:mt-0">
                               <Building2 size={20} />
                             </div>
 
                             <div>
                               <div className="flex items-center gap-2 flex-wrap">
-                                <span className="font-bold text-sm text-white">{stmt.bank}</span>
-                                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-white/5 text-text-secondary border border-white/5">
+                                <span className="font-bold text-sm text-text-primary">{stmt.bank}</span>
+                                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[var(--color-white-10)] text-text-secondary border border-[var(--color-white-10)]">
                                   {stmt.account_number}
                                 </span>
                                 {stmt.is_manual ? (
@@ -559,7 +559,7 @@ export const PortfolioDataManagerModal: React.FC<Props> = ({ isOpen, onClose, on
                                     Manual Entry
                                   </span>
                                 ) : (
-                                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
                                     PDF Parsed
                                   </span>
                                 )}
@@ -581,7 +581,7 @@ export const PortfolioDataManagerModal: React.FC<Props> = ({ isOpen, onClose, on
                               <p className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold">
                                 Total Valuation
                               </p>
-                              <p className="text-base font-bold font-mono text-emerald-400">
+                              <p className="text-base font-bold font-mono text-emerald-600 dark:text-emerald-400">
                                 {formatPKR(stmt.summary.total_market_value)}
                               </p>
                             </div>
@@ -591,7 +591,7 @@ export const PortfolioDataManagerModal: React.FC<Props> = ({ isOpen, onClose, on
                                 <>
                                   <button
                                     onClick={() => handleStartEdit(stmt)}
-                                    className="p-2 rounded-xl bg-white/5 hover:bg-emerald-500/20 text-text-secondary hover:text-emerald-400 border border-white/5 transition-colors"
+                                    className="p-2 rounded-xl bg-[var(--color-white-5)] hover:bg-emerald-500/10 text-text-secondary hover:text-emerald-600 dark:hover:text-emerald-400 border border-[var(--color-white-10)] transition-colors"
                                     title="Edit statement data"
                                   >
                                     <Edit3 size={15} />
@@ -609,7 +609,7 @@ export const PortfolioDataManagerModal: React.FC<Props> = ({ isOpen, onClose, on
                                     onClick={() =>
                                       setExpandedStatementId(isExpanded ? null : stmt.id)
                                     }
-                                    className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-text-secondary hover:text-white transition-colors"
+                                    className="p-2 rounded-xl bg-[var(--color-white-5)] hover:bg-[var(--color-white-10)] text-text-secondary hover:text-text-primary border border-[var(--color-white-10)] transition-colors"
                                     title={isExpanded ? 'Collapse' : 'Expand'}
                                   >
                                     {isExpanded ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
@@ -788,7 +788,7 @@ export const PortfolioDataManagerModal: React.FC<Props> = ({ isOpen, onClose, on
                               <div className="overflow-x-auto">
                                 <table className="w-full text-left text-xs">
                                   <thead>
-                                    <tr className="text-[10px] text-text-secondary uppercase tracking-wider border-b border-white/10 pb-2">
+                                    <tr className="text-[10px] text-text-secondary uppercase tracking-wider border-b border-[var(--color-white-10)] pb-2">
                                       <th className="pb-2 font-semibold">Fund Name</th>
                                       <th className="pb-2 font-semibold">Category</th>
                                       <th className="pb-2 font-semibold text-right">Market Value</th>
@@ -796,23 +796,23 @@ export const PortfolioDataManagerModal: React.FC<Props> = ({ isOpen, onClose, on
                                       <th className="pb-2 text-center font-semibold">Actions</th>
                                     </tr>
                                   </thead>
-                                  <tbody className="divide-y divide-white/5 font-mono">
+                                  <tbody className="divide-y divide-[var(--color-white-5)] font-mono">
                                     {stmt.holdings.map((h, hIdx) => {
                                       const isPos = (h.gain_loss || 0) >= 0;
                                       return (
-                                        <tr key={hIdx} className="hover:bg-white/3">
-                                          <td className="py-2.5 font-sans font-medium text-white">{h.fund_name}</td>
+                                        <tr key={hIdx} className="hover:bg-[var(--color-white-5)]">
+                                          <td className="py-2.5 font-sans font-medium text-text-primary">{h.fund_name}</td>
                                           <td className="py-2.5 font-sans">
-                                            <span className="px-2 py-0.5 rounded-md bg-white/5 text-text-secondary border border-white/5 text-[10px]">
+                                            <span className="px-2 py-0.5 rounded-md bg-[var(--color-white-5)] text-text-secondary border border-[var(--color-white-10)] text-[10px]">
                                               {h.category}
                                             </span>
                                           </td>
-                                          <td className="py-2.5 text-right text-emerald-400 font-bold font-mono whitespace-nowrap">
+                                          <td className="py-2.5 text-right text-emerald-600 dark:text-emerald-400 font-bold font-mono whitespace-nowrap">
                                             {formatPKR(h.market_value)}
                                           </td>
                                           <td
                                             className={`py-2.5 text-right font-mono whitespace-nowrap ${
-                                              isPos ? 'text-emerald-400' : 'text-red-400'
+                                              isPos ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500'
                                             }`}
                                           >
                                             {isPos ? '+' : ''}
@@ -848,10 +848,10 @@ export const PortfolioDataManagerModal: React.FC<Props> = ({ isOpen, onClose, on
 
           {/* TAB 2: MANUAL MONTH ENTRY */}
           {activeTab === 'manual' && (
-            <div className="max-w-2xl mx-auto space-y-6 bg-surface/30 border border-white/5 rounded-2xl p-6">
+            <div className="max-w-2xl mx-auto space-y-6 bg-surface/50 border border-[var(--color-white-10)] rounded-2xl p-6">
               <div>
-                <h3 className="text-base font-bold text-white flex items-center gap-2">
-                  <Plus size={18} className="text-emerald-400" />
+                <h3 className="text-base font-bold text-text-primary flex items-center gap-2">
+                  <Plus size={18} className="text-emerald-600 dark:text-emerald-400" />
                   Record Manual Month Statement
                 </h3>
                 <p className="text-xs text-text-secondary mt-1">
@@ -867,10 +867,10 @@ export const PortfolioDataManagerModal: React.FC<Props> = ({ isOpen, onClose, on
                   <select
                     value={manualBank}
                     onChange={(e) => setManualBank(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
+                    className="w-full bg-[var(--color-white-5)] border border-[var(--color-white-10)] rounded-xl px-3 py-2 text-xs text-text-primary focus:outline-none focus:border-emerald-500"
                   >
                     {meta.institutions.map((b) => (
-                      <option key={b} value={b} className="bg-[#0f172a]">
+                      <option key={b} value={b} className="bg-surface text-text-primary">
                         {b}
                       </option>
                     ))}
@@ -885,7 +885,7 @@ export const PortfolioDataManagerModal: React.FC<Props> = ({ isOpen, onClose, on
                     type="date"
                     value={manualDate}
                     onChange={(e) => setManualDate(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
+                    className="w-full bg-[var(--color-white-5)] border border-[var(--color-white-10)] rounded-xl px-3 py-2 text-xs text-text-primary focus:outline-none focus:border-emerald-500"
                   />
                 </div>
 

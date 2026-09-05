@@ -16,6 +16,7 @@ import hblLogo from '../assets/logos/HBL.png';
 import atlasLogo from '../assets/logos/Atlas.jpg';
 import faysalLogo from '../assets/logos/FaysalFunds.jpg';
 import fundTrackerIcon from '../assets/fund_tracker_icon.png';
+import fundTrackerIconLight from '../assets/fund_tracker_icon_light.png';
 
 const BankLogo = ({ src, alt }: { src: string; alt: string }) => (
     <div className="w-7 h-7 rounded-lg bg-white p-0.5 flex items-center justify-center shrink-0 shadow-md border border-white/30 transition-transform duration-200 group-hover:scale-105">
@@ -486,8 +487,8 @@ const Dashboard = () => {
             `}>
                 <div className={`flex items-center border-b border-[var(--color-white-5)] shrink-0 transition-all ${isSidebarOpen ? 'p-4 justify-between' : 'px-2.5 py-4 justify-between gap-1.5'}`}>
                     <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center shadow-lg shadow-emerald-500/20 shrink-0 border border-emerald-500/30 bg-[#071322]">
-                            <img src={fundTrackerIcon} alt="FundTracker" className="w-full h-full object-cover" />
+                        <div className={`w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center shadow-lg shadow-emerald-500/20 shrink-0 border border-emerald-500/30 ${theme === 'light' ? 'bg-emerald-700' : 'bg-[#071322]'}`}>
+                            <img src={theme === 'light' ? fundTrackerIconLight : fundTrackerIcon} alt="FundTracker" className="w-full h-full object-cover" />
                         </div>
                         {isSidebarOpen && (
                             <div className="transition-opacity duration-300 whitespace-nowrap overflow-hidden">
@@ -798,6 +799,7 @@ const Dashboard = () => {
                                 <div className="flex-1 w-full min-h-[300px] min-w-0 overflow-hidden">
                                     {performance && performance.length > 0 ? (
                                         <ReactApexChart 
+                                            key={`perf-chart-${theme}-${performance.length}`}
                                             options={{
                                                 chart: {
                                                     type: 'area',
@@ -838,20 +840,28 @@ const Dashboard = () => {
                                                     size: 0,
                                                     hover: { size: 6, sizeOffset: 3 },
                                                     colors: ['#10B981'],
-                                                    strokeColors: theme === 'dark' ? '#1a1a2e' : '#ffffff',
+                                                    strokeColors: theme === 'dark' ? '#111A2E' : '#FAF7F2',
                                                     strokeWidth: 2,
                                                 },
                                                 xaxis: {
                                                     type: 'datetime',
                                                     categories: performance.map((p: any) => p.date),
-                                                    labels: { style: { colors: theme === 'dark' ? '#94A3B8' : '#64748B', fontFamily: 'Inter' } },
+                                                    labels: { 
+                                                        style: { colors: theme === 'dark' ? '#94A3B8' : '#4A6356', fontFamily: 'Inter' },
+                                                        datetimeFormatter: {
+                                                            year: 'yyyy',
+                                                            month: "MMM 'yy",
+                                                            day: 'dd MMM',
+                                                            hour: 'HH:mm'
+                                                        }
+                                                    },
                                                     axisBorder: { show: false },
                                                     axisTicks: { show: false },
                                                     crosshairs: { show: true, stroke: { color: '#10B981', width: 1, dashArray: 3 } },
                                                 },
                                                 yaxis: {
                                                     labels: {
-                                                        style: { colors: theme === 'dark' ? '#94A3B8' : '#64748B', fontFamily: 'Inter' },
+                                                        style: { colors: theme === 'dark' ? '#94A3B8' : '#4A6356', fontFamily: 'Inter' },
                                                         formatter: (value) => {
                                                             if (value === null || value === undefined || isNaN(value)) return 'PKR 0k';
                                                             const hasMillions = performance && performance.some((p: any) => Math.abs(p.value || 0) >= 1_000_000);
@@ -864,22 +874,42 @@ const Dashboard = () => {
                                                     }
                                                 },
                                                 grid: {
-                                                    borderColor: theme === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
+                                                    borderColor: theme === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(20,55,35,0.06)',
                                                     strokeDashArray: 4,
                                                 },
                                                 tooltip: {
+                                                    enabled: true,
                                                     theme: theme,
-                                                    x: { format: 'dd MMM yyyy' },
-                                                    y: {
-                                                        formatter: (value) => {
-                                                            if (value === null || value === undefined || isNaN(value)) return 'PKR 0.00 (0k)';
-                                                            const full = Number(value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-                                                            const abs = Math.abs(value);
-                                                            const unit = abs >= 1_000_000 ? ` (${(value / 1_000_000).toFixed(2)}M)` : ` (${(value / 1_000).toFixed(1)}k)`;
-                                                            return `PKR ${full}${unit}`;
-                                                        }
-                                                    },
-                                                    marker: { show: true },
+                                                    custom: function({ series, seriesIndex, dataPointIndex, w }: any) {
+                                                        const item = performance[dataPointIndex];
+                                                        const rawDate = item?.date || w?.globals?.categoryLabels?.[dataPointIndex] || '';
+                                                        const dateStr = rawDate ? new Date(rawDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '';
+                                                        const val = item?.value ?? series[seriesIndex]?.[dataPointIndex] ?? 0;
+                                                        const full = Number(val).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                                                        const abs = Math.abs(val);
+                                                        const unit = abs >= 1_000_000 ? ` (${(val / 1_000_000).toFixed(2)}M)` : ` (${(val / 1_000).toFixed(1)}k)`;
+                                                        const isDark = theme === 'dark';
+                                                        const bg = isDark ? '#111A2E' : '#FAF7F2';
+                                                        const headerBg = isDark ? '#1A2540' : '#EFEBE3';
+                                                        const textPrimary = isDark ? '#F8FAFC' : '#0F291E';
+                                                        const textSecondary = isDark ? '#94A3B8' : '#4A6356';
+                                                        const border = isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(20, 55, 35, 0.12)';
+
+                                                        return `
+                                                            <div style="background-color: ${bg}; border: 1px solid ${border}; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.35); font-family: Inter, sans-serif; pointer-events: none;">
+                                                                <div style="background-color: ${headerBg}; padding: 6px 12px; font-size: 11px; font-weight: 600; color: ${textSecondary}; border-bottom: 1px solid ${border};">
+                                                                    ${dateStr}
+                                                                </div>
+                                                                <div style="padding: 8px 12px; display: flex; align-items: center; gap: 8px;">
+                                                                    <span style="width: 8px; height: 8px; border-radius: 50%; background-color: #10B981; display: inline-block;"></span>
+                                                                    <span style="font-size: 12px; color: ${textSecondary}; font-weight: 500;">Net Worth:</span>
+                                                                    <span style="font-size: 13px; font-weight: 700; font-family: 'JetBrains Mono', monospace; color: ${textPrimary};">
+                                                                        PKR ${full}${unit}
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                        `;
+                                                    }
                                                 }
                                             } as ApexOptions} 
                                             series={[{
@@ -887,7 +917,7 @@ const Dashboard = () => {
                                                 data: performance.map((p: any) => p.value)
                                             }]} 
                                             type="area" 
-                                            width="100%"
+                                            width="100%" 
                                             height="100%" 
                                         />
                                     ) : (
