@@ -1,100 +1,95 @@
 import os
-import time
 import json
 import logging
-import google.generativeai as genai
+import fitz
 from sqlalchemy.orm import Session
 from app.models import Fund, Bank
+from app.services.llm_service import generate_json, get_active_ai_provider
 
 logger = logging.getLogger(__name__)
 
-# Assumes the user has exported their API key in their environment or .env file
-# e.g., export GEMINI_API_KEY="AIzaSy..."
-from dotenv import load_dotenv
-load_dotenv()
-
-genai.configure(api_key=os.environ.get("GEMINI_API_KEY", ""))
+def extract_text_from_pdf(file_path: str) -> str:
+    """Extracts structured text from all pages of an FMR PDF using PyMuPDF."""
+    doc = fitz.open(file_path)
+    pages_text = []
+    for page_num in range(len(doc)):
+        page = doc[page_num]
+        text = page.get_text("text")
+        if text.strip():
+            pages_text.append(f"--- PAGE {page_num + 1} ---\n{text}")
+    return "\n\n".join(pages_text)
 
 def parse_fmr_pdf_with_ai(file_path: str, db: Session):
     """
-    Parses a Fund Manager Report PDF using Google Gemini AI to avoid graphical/OCR errors.
-    Extracts Risk Profile and Asset Allocation for each matched fund.
+    Parses a Fund Manager Report PDF using Alibaba Cloud Qwen (Model Studio)
+    with Gemini fallback via unified llm_service.
+    Extracts Risk Profile, Asset Allocation, and official performance returns for each fund.
     """
-    if not os.environ.get("GEMINI_API_KEY"):
-        logger.error("GEMINI_API_KEY environment variable not set. Cannot parse FMRs via AI.")
+    active_ai = get_active_ai_provider()
+    if active_ai.get("status") == "missing_keys":
+        logger.error("No AI API key found (Neither DASHSCOPE_API_KEY nor GEMINI_API_KEY). Cannot parse FMR.")
         return 0
         
     funds = db.query(Fund).all()
     
-    logger.info(f"Uploading FMR PDF to Gemini API: {file_path}")
-    uploaded_file = None
+    logger.info(f"Extracting text from FMR PDF: {file_path} using PyMuPDF...")
     
     try:
-        # Upload the file to Gemini's File API for processing
-        uploaded_file = genai.upload_file(path=file_path, display_name=os.path.basename(file_path))
-        logger.info(f"File uploaded successfully. URI: {uploaded_file.uri}")
+        pdf_text = extract_text_from_pdf(file_path)
+        if not pdf_text.strip():
+            logger.warning(f"No text extracted from FMR PDF: {file_path}")
+            return 0
+            
+        logger.info(f"FMR text extracted ({len(pdf_text)} characters). Requesting extraction via {active_ai.get('provider')} ({active_ai.get('model')})...")
         
-        # Wait a moment for file processing if necessary
-        time.sleep(2)
-        
-        prompt = f"""
-        You are an expert financial analyst. Attached is a monthly Fund Manager Report (FMR) PDF. 
-        Your goal is to find and extract information for EVERY single fund mentioned in this report.
-        
-        Also extract the Asset Management Company (AMC) or Bank name that generated this report (e.g., "Al Meezan Investment Management", "HBL Asset Management", "Atlas", "Faysal").
-
-        For every fund found in the document, extract:
-        1. "fund_name": The full name of the fund.
-        2. "short_name": The initials or short abbreviation of the fund (e.g., "MCF" for "Meezan Cash Fund" or "HBL-IF" for "HBL Income Fund").
-        3. "risk_profile": The official risk rating assigned to the fund (e.g. "Low", "Moderate", "Medium", "High").
-        4. "asset_allocation": A concise string summarizing the actual asset allocation percentages mentioned for the fund (e.g. "Equities: 65%, Cash: 20%, Sukuks: 15%"). Keep it brief but accurate.
-        5. "fund_type": The fundamental underlying asset category the fund predominantly invests in. STRICTLY choose ONE of the following: "Equity", "Money Market", "Income", "Asset Allocation", or "Commodity". Do NOT output generic terms like "Pension Scheme". If it is a pension sub-fund, determine its type (e.g., an "Equity sub Fund" is "Equity").
-        6. "return_1m": The 1-month historical return percentage of the fund mentioned in the report (as a float, e.g. 5.5). If not mentioned, output null.
-        7. "return_6m": The 6-month historical return percentage of the fund. If not mentioned, output null.
-        8. "return_1y": The 1-year historical return percentage of the fund. If not mentioned, output null.
-        9. "return_ytd": The Year-to-Date (YTD) historical return percentage of the fund. If not mentioned, output null.
-        
-        Return the result strictly as a valid JSON object. Do NOT wrap it in Markdown (```json).
-        Format:
-        {{
-            "bank_name": "Al Meezan Investment Management",
-            "funds": [
-                {{
-                    "fund_name": "Meezan Islamic Fund",
-                    "short_name": "MIF",
-                    "risk_profile": "High",
-                    "asset_allocation": "Equities: 90%, Cash: 10%",
-                    "fund_type": "Equity",
-                    "return_1m": 1.2,
-                    "return_6m": -0.5,
-                    "return_1y": 15.4,
-                    "return_ytd": 8.0
-                }}
-            ]
-        }}
-        """
-        
-        # We use Flash as it's highly capable of multi-modal PDF parsing and fast
-        model = genai.GenerativeModel(model_name="gemini-2.5-flash")
-        
-        logger.info("Requesting structured JSON extraction from Gemini...")
-        response = model.generate_content(
-            [uploaded_file, prompt],
-            generation_config=genai.types.GenerationConfig(
-                temperature=0.1,  # Low temperature for strict factual extraction
-            )
+        system_prompt = (
+            "You are an expert financial analyst. You will be provided with text extracted from a monthly "
+            "Pakistani mutual fund Fund Manager Report (FMR). Extract structured data for all funds mentioned."
         )
         
-        response_text = response.text.strip()
-        
-        # Clean up markdown if AI ignored the formatting instructions
-        if response_text.startswith("```json"):
-            response_text = response_text.replace("```json", "", 1)
-        if response_text.endswith("```"):
-            response_text = response_text[:-3]
+        prompt = f"""Attached is the extracted content from a monthly Fund Manager Report (FMR) PDF. 
+Your goal is to find and extract information for EVERY single fund mentioned in this report.
+
+Also extract the Asset Management Company (AMC) or Bank name that generated this report (e.g., "Al Meezan Investment Management", "HBL Asset Management", "Atlas", "Faysal").
+
+For every fund found in the document, extract:
+1. "fund_name": The full name of the fund.
+2. "short_name": The initials or short abbreviation of the fund (e.g., "MCF" for "Meezan Cash Fund" or "HBL-IF" for "HBL Income Fund").
+3. "risk_profile": The official risk rating assigned to the fund (e.g. "Low", "Moderate", "Medium", "High").
+4. "asset_allocation": A concise string summarizing the actual asset allocation percentages mentioned for the fund (e.g. "Equities: 65%, Cash: 20%, Sukuks: 15%"). Keep it brief but accurate.
+5. "fund_type": The fundamental underlying asset category the fund predominantly invests in. STRICTLY choose ONE of the following: "Equity", "Money Market", "Income", "Asset Allocation", or "Commodity". Do NOT output generic terms like "Pension Scheme". If it is a pension sub-fund, determine its type (e.g., an "Equity sub Fund" is "Equity").
+6. "return_1m": The 1-month historical return percentage of the fund mentioned in the report (as a float, e.g. 5.5). If not mentioned, output null.
+7. "return_6m": The 6-month historical return percentage of the fund. If not mentioned, output null.
+8. "return_1y": The 1-year historical return percentage of the fund. If not mentioned, output null.
+9. "return_ytd": The Year-to-Date (YTD) historical return percentage of the fund. If not mentioned, output null.
+
+Return the result strictly as a valid JSON object.
+Format:
+{{
+    "bank_name": "Al Meezan Investment Management",
+    "funds": [
+        {{
+            "fund_name": "Meezan Islamic Fund",
+            "short_name": "MIF",
+            "risk_profile": "High",
+            "asset_allocation": "Equities: 90%, Cash: 10%",
+            "fund_type": "Equity",
+            "return_1m": 1.2,
+            "return_6m": -0.5,
+            "return_1y": 15.4,
+            "return_ytd": 8.0
+        }}
+    ]
+}}
+
+DOCUMENT CONTENT:
+{pdf_text[:60000]}
+"""
+        extracted_data = generate_json(prompt, system_prompt=system_prompt, temperature=0.1)
+        if not extracted_data or not isinstance(extracted_data, dict):
+            logger.error("AI returned invalid data structure for FMR extraction.")
+            return 0
             
-        extracted_data = json.loads(response_text)
-        
         extracted_bank_name = extracted_data.get("bank_name", "")
         extracted_funds = extracted_data.get("funds", [])
         
@@ -210,14 +205,6 @@ def parse_fmr_pdf_with_ai(file_path: str, db: Session):
             logger.info(f"Successfully enriched/created {updated_count} funds from AI FMR Parsing.")
             
         return updated_count
-
     except Exception as e:
-        logger.error(f"Failed to parse FMR PDF with Gemini AI: {e}")
+        logger.error(f"Failed to parse FMR PDF with AI: {e}")
         return 0
-    finally:
-        if uploaded_file:
-            try:
-                genai.delete_file(uploaded_file.name)
-                logger.info(f"Deleted uploaded FMR from Gemini servers: {uploaded_file.name}")
-            except:
-                pass
