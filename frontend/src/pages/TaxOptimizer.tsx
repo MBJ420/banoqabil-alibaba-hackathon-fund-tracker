@@ -60,6 +60,15 @@ export const calculatePakistanSalaryTax = (income: number): number => {
   return 700_000 + (income - 4_100_000) * 0.35;
 };
 
+export const getSalaryTaxSlabInfo = (income: number) => {
+  if (income <= 600_000) return { bracket: '0% Slab (Tax-Free)', marginalRate: 0, description: 'Income up to Rs 600,000 is 100% tax-free.' };
+  if (income <= 1_200_000) return { bracket: '5% FBR Slab', marginalRate: 0.05, description: '5% tax on amount exceeding Rs 600,000.' };
+  if (income <= 2_200_000) return { bracket: '15% FBR Slab', marginalRate: 0.15, description: 'Rs 30,000 base + 15% on amount exceeding Rs 1,200,000.' };
+  if (income <= 3_200_000) return { bracket: '25% FBR Slab', marginalRate: 0.25, description: 'Rs 180,000 base + 25% on amount exceeding Rs 2,200,000.' };
+  if (income <= 4_100_000) return { bracket: '30% FBR Slab', marginalRate: 0.30, description: 'Rs 430,000 base + 30% on amount exceeding Rs 3,200,000.' };
+  return { bracket: '35% Top FBR Slab', marginalRate: 0.35, description: 'Highest FBR slab: Rs 700,000 base + 35% on amount exceeding Rs 4,100,000.' };
+};
+
 type Row = { id: number; name: string; cost: number; value: number };
 
 
@@ -99,7 +108,7 @@ const Field = ({
 const Stat = ({ label, value, sub, tone = 'default' }: { label: string; value: string; sub?: string; tone?: 'default' | 'good' | 'bad' }) => (
   <div className="bg-[var(--color-white-5)] border border-[var(--color-white-10)] rounded-xl p-4">
     <p className="text-xs font-semibold uppercase tracking-wider text-text-secondary">{label}</p>
-    <p className={`mt-1 text-xl font-bold font-mono tabular-nums break-words ${tone === 'good' ? 'text-emerald-400' : tone === 'bad' ? 'text-danger' : 'text-text-primary'}`}>{value}</p>
+    <p className={`mt-1 text-xl font-bold font-mono tabular-nums break-words ${tone === 'good' ? 'text-emerald-700 dark:text-emerald-400' : tone === 'bad' ? 'text-danger' : 'text-text-primary'}`}>{value}</p>
     {sub && <p className="text-xs text-text-secondary mt-0.5">{sub}</p>}
   </div>
 );
@@ -181,6 +190,9 @@ export default function TaxOptimizer() {
   const monthlyBaselineTax = Math.round(baselineSalaryTax / 12);
   const monthlyNetTax = Math.round(netSalaryTaxAfterVps / 12);
   const monthlyTaxSaved = Math.round(vpsTaxRebate / 12);
+  const slabInfo = getSalaryTaxSlabInfo(taxableIncome);
+  const isOverCap = vpsContribution > maxEligibleVpsContribution;
+  const remainingCapRoom = Math.max(0, maxEligibleVpsContribution - vpsContribution);
 
   const downloadAnnexure = () => {
     const lines = [
@@ -285,41 +297,43 @@ export default function TaxOptimizer() {
         {/* Filer Status Bar */}
         <div className="flex flex-wrap items-center justify-between gap-4 bg-surface border border-[var(--color-white-5)] rounded-2xl p-4">
           <div className="flex items-center gap-3">
-            <span className="text-sm font-semibold text-text-primary">Are you an Active Tax Filer?</span>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setIsFiler(true)}
-                className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
-                  isFiler
-                    ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40 shadow-sm'
-                    : 'bg-[var(--color-white-5)] text-text-secondary border-[var(--color-white-10)] hover:border-white/30'
-                }`}
-              >
-                Yes, Active Filer (15% Tax)
-              </button>
-              <button
-                onClick={() => setIsFiler(false)}
-                className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
-                  !isFiler
-                    ? 'bg-danger/20 text-danger border-danger/40 shadow-sm'
-                    : 'bg-[var(--color-white-5)] text-text-secondary border-[var(--color-white-10)] hover:border-white/30'
-                }`}
-              >
-                No, Non-Filer (30% Double Tax)
-              </button>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-sm font-semibold text-text-primary">Are you an Active Tax Filer?</span>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setIsFiler(true)}
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
+                    isFiler
+                      ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border-emerald-500/40 shadow-sm'
+                      : 'bg-[var(--color-white-5)] text-text-secondary border-[var(--color-white-10)] hover:border-white/30'
+                  }`}
+                >
+                  Yes, Active Filer (15% Tax)
+                </button>
+                <button
+                  onClick={() => setIsFiler(false)}
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
+                    !isFiler
+                      ? 'bg-danger/20 text-danger border-danger/40 shadow-sm'
+                      : 'bg-[var(--color-white-5)] text-text-secondary border-[var(--color-white-10)] hover:border-white/30'
+                  }`}
+                >
+                  No, Non-Filer (30% Double Tax)
+                </button>
+              </div>
             </div>
-          </div>
 
-          <div className="flex items-center gap-2 text-xs font-medium">
-            {isFiler ? (
-              <span className="text-emerald-400 flex items-center gap-1.5 bg-emerald-500/10 px-3 py-1 rounded-lg border border-emerald-500/20">
-                <ShieldCheck size={14} /> Filer Benefit: You save 50% on tax by being an Active Filer
-              </span>
-            ) : (
-              <span className="text-danger flex items-center gap-1.5 bg-danger/10 px-3 py-1 rounded-lg border border-danger/20">
-                <AlertCircle size={14} /> Non-Filer Penalty: You pay double tax (30%) on profits
-              </span>
-            )}
+            <div className="flex items-center gap-2 text-xs font-medium">
+              {isFiler ? (
+                <span className="text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5 bg-emerald-500/10 px-3 py-1 rounded-lg border border-emerald-500/20">
+                  <ShieldCheck size={14} /> Filer Benefit: You save 50% on tax by being an Active Filer
+                </span>
+              ) : (
+                <span className="text-danger flex items-center gap-1.5 bg-danger/10 px-3 py-1 rounded-lg border border-danger/20">
+                  <AlertCircle size={14} /> Non-Filer Penalty: You pay double tax (30%) on profits
+                </span>
+              )}
+            </div>
           </div>
         </div>
 
@@ -328,7 +342,7 @@ export default function TaxOptimizer() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <div className="flex items-center gap-2">
-                <TrendingUp size={18} className="text-emerald-400" />
+                <TrendingUp size={18} className="text-emerald-700 dark:text-emerald-400" />
                 <h3 className="text-lg font-bold">Withdrawn Funds (Profits & Losses)</h3>
               </div>
               <p className="text-xs text-text-secondary mt-1">
@@ -370,7 +384,7 @@ export default function TaxOptimizer() {
                   </div>
                   <div className="md:col-span-2">
                     <p className="text-xs font-medium text-text-secondary">Your Profit / (Loss)</p>
-                    <p className={`mt-2 text-sm font-bold font-mono tabular-nums ${isProfit ? 'text-emerald-400' : 'text-danger'}`}>
+                    <p className={`mt-2 text-sm font-bold font-mono tabular-nums ${isProfit ? 'text-emerald-700 dark:text-emerald-400' : 'text-danger'}`}>
                       {isProfit ? '+' : ''}{fmtPKR(diff)}
                     </p>
                   </div>
@@ -406,7 +420,7 @@ export default function TaxOptimizer() {
         <section className="bg-surface border border-[var(--color-white-5)] rounded-2xl p-6 space-y-5">
           <div>
             <div className="flex items-center gap-2">
-              <Landmark size={18} className="text-emerald-400" />
+              <Landmark size={18} className="text-emerald-700 dark:text-emerald-400" />
               <h3 className="text-lg font-bold">If You Cash Out Today (Withdrawal Calculator)</h3>
             </div>
             <p className="text-xs text-text-secondary mt-1">
@@ -431,7 +445,7 @@ export default function TaxOptimizer() {
           </div>
 
           <div className="flex items-start gap-2 text-xs text-text-secondary bg-[var(--color-white-2)] border border-[var(--color-white-5)] rounded-xl p-3">
-            <Info size={14} className="mt-0.5 text-emerald-400 shrink-0" />
+            <Info size={14} className="mt-0.5 text-emerald-700 dark:text-emerald-400 shrink-0" />
             <p>
               <strong>Good to know:</strong> Under Pakistani law (Finance Act 2024), tax is 15% on your profit (for Filers) regardless of how long you kept the money. (The old 1-year tax-free exemption no longer applies).
             </p>
@@ -439,116 +453,199 @@ export default function TaxOptimizer() {
         </section>
 
         {/* Section 3: Retirement Pension Tax Discount */}
-        <section className="bg-surface border border-[var(--color-white-5)] rounded-2xl p-6 space-y-5">
+        <section className="bg-surface border border-[var(--color-white-5)] rounded-2xl p-6 space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <div className="flex items-center gap-2">
-                <Receipt size={18} className="text-emerald-400" />
-                <h3 className="text-lg font-bold">Retirement Pension Tax Discount (Save on Salary Tax)</h3>
+                <Receipt size={20} className="text-emerald-700 dark:text-emerald-400" />
+                <h3 className="text-xl font-bold">Retirement Pension Tax Discount (Save on Salary Tax)</h3>
               </div>
               <p className="text-xs text-text-secondary mt-1">
-                Enter your salary. The app calculates your FBR income tax and shows how much money you save by putting 20% into a pension fund.
+                SECP & FBR Section 63: The higher your salary, the higher your tax percentage. Invest up to 20% into an approved Islamic Pension Fund to legally shelter that portion of your income from tax.
               </p>
             </div>
-            {isFiler && baselineSalaryTax > 0 && (
+          </div>
+
+          {/* STEP 1: Enter Salary & View Tax Rate */}
+          <div className="bg-[var(--color-white-2)] border border-[var(--color-white-10)] rounded-2xl p-5 space-y-4">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <span className="text-xs font-bold uppercase tracking-wider text-text-primary flex items-center gap-2">
+                <span className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-[11px] font-black">1</span>
+                Your Salary & FBR Tax Bracket
+              </span>
+              <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
+                {slabInfo.bracket}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <Field
+                label="Monthly Salary (PKR)"
+                value={monthlySalary}
+                onChange={(m) => setTaxableIncome(m * 12)}
+                suffix="PKR/mo"
+                step={25000}
+              />
+              <Field
+                label="Annual Salary (PKR)"
+                value={taxableIncome}
+                onChange={setTaxableIncome}
+                suffix="PKR/yr"
+                step={100000}
+              />
+              <Field
+                label="Your Age (Years)"
+                value={investorAge}
+                onChange={setInvestorAge}
+                suffix="yrs"
+                step={1}
+              />
+            </div>
+
+            {/* Clear Tax Rate Callout */}
+            <div className="p-4 rounded-xl bg-surface border border-[var(--color-white-5)] flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+              <div className="space-y-1">
+                <p className="text-sm text-text-primary">
+                  Because your salary is <strong className="text-emerald-700 dark:text-emerald-400 font-mono">{fmtPKR(monthlySalary)}/month</strong> ({fmtPKR(taxableIncome)}/year), your FBR income tax is:
+                </p>
+                <p className="text-xs text-text-secondary">
+                  {slabInfo.description} You pay an effective average tax rate of <strong>{fmtPct(averageTaxRate)}</strong> ({fmtPKR(monthlyBaselineTax)}/month).
+                </p>
+              </div>
+              <div className="flex items-center gap-4 bg-[var(--color-white-5)] px-4 py-2.5 rounded-xl border border-[var(--color-white-5)] shrink-0">
+                <div>
+                  <p className="text-[10px] font-semibold text-text-secondary uppercase">Your FBR Tax Rate</p>
+                  <p className="text-2xl font-black font-mono text-danger">{fmtPct(averageTaxRate)}</p>
+                </div>
+                <div className="border-l border-[var(--color-white-10)] pl-4">
+                  <p className="text-[10px] font-semibold text-text-secondary uppercase">Annual Tax Owed</p>
+                  <p className="text-lg font-bold font-mono text-text-primary">{fmtPKR(baselineSalaryTax)}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* STEP 2: The 20% Target & Amount You Wish to Invest */}
+          <div className="bg-[var(--color-white-2)] border border-[var(--color-white-10)] rounded-2xl p-5 space-y-4">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <span className="text-xs font-bold uppercase tracking-wider text-text-primary flex items-center gap-2">
+                <span className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-[11px] font-black">2</span>
+                Recommended 20% Investment & Your Decision
+              </span>
+              <span className="text-xs text-text-secondary font-medium">
+                FBR Section 63 Limit: <strong className="text-text-primary">{(vpsCapPct * 100).toFixed(0)}% of salary</strong> {investorAge > 40 ? `(includes +${(ageBonusPct * 100).toFixed(0)}% age bonus)` : ''}
+              </span>
+            </div>
+
+            {/* Target callout */}
+            <div className="p-4 rounded-xl bg-emerald-950/20 border border-emerald-500/30 flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <Sparkles size={16} className="text-emerald-600 dark:text-emerald-400" />
+                  <span className="text-xs font-bold text-emerald-700 dark:text-emerald-300">
+                    Recommended 20% Tax-Free Shelter: {fmtPKR(recommendedAnnualVPS)} / year ({fmtPKR(recommendedMonthlyVPS)} / month)
+                  </span>
+                </div>
+                <p className="text-xs text-text-secondary">
+                  If you invest this full 20% into an approved Pension Fund, that entire amount bypasses income tax, cutting your annual tax bill by <strong>{((maxEligibleVpsContribution * averageTaxRate) / (baselineSalaryTax || 1) * 100).toFixed(1)}%</strong>!
+                </p>
+              </div>
+
               <button
                 onClick={() => setVpsContribution(recommendedAnnualVPS)}
-                className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 transition-all cursor-pointer shrink-0 shadow-sm"
+                className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white transition-all cursor-pointer shadow-sm shrink-0"
               >
-                <Zap size={14} /> Auto-Set 20% Investment ({fmtPKR(recommendedAnnualVPS)})
+                <Zap size={14} /> Invest Full 20% ({fmtPKR(recommendedAnnualVPS)})
               </button>
-            )}
-          </div>
+            </div>
 
-          {/* Smart Recommendation Banner */}
-          <div className="bg-gradient-to-r from-emerald-950/40 via-emerald-900/20 to-transparent border border-emerald-500/30 rounded-2xl p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-            <div className="space-y-1.5 max-w-2xl">
-              <div className="flex items-center gap-2">
-                <Sparkles size={16} className="text-emerald-400" />
-                <span className="text-xs font-bold uppercase tracking-wider text-emerald-400">
-                  FBR Tax Advisor Recommendation
-                </span>
+            {/* Input for what the user is willing to invest */}
+            <div className="space-y-3 pt-2">
+              <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+                <div className="flex-1">
+                  <Field
+                    label="How much are you willing to invest in a Pension Fund this year?"
+                    value={vpsContribution}
+                    onChange={setVpsContribution}
+                    suffix="PKR"
+                    step={25000}
+                  />
+                </div>
+                {/* Quick Pick Buttons */}
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-xs text-text-secondary font-medium mr-1">Quick Picks:</span>
+                  {[0.05, 0.10, 0.15].map((pct) => (
+                    <button
+                      key={pct}
+                      onClick={() => setVpsContribution(Math.round(taxableIncome * pct))}
+                      className="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-[var(--color-white-5)] hover:bg-[var(--color-white-10)] text-text-secondary hover:text-text-primary border border-[var(--color-white-10)] transition-all cursor-pointer"
+                    >
+                      {(pct * 100).toFixed(0)}% ({fmtPKR(taxableIncome * pct)})
+                    </button>
+                  ))}
+                  <button
+                    onClick={() => setVpsContribution(recommendedAnnualVPS)}
+                    className="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-700 dark:text-emerald-400 border border-emerald-500/40 transition-all cursor-pointer"
+                  >
+                    Max 20% ({fmtPKR(recommendedAnnualVPS)})
+                  </button>
+                </div>
               </div>
-              <p className="text-sm text-text-primary leading-relaxed">
-                On a salary of <strong>{fmtPKR(monthlySalary)}/month</strong> ({fmtPKR(taxableIncome)}/year), your normal income tax is <strong>{fmtPKR(baselineSalaryTax)}</strong> ({fmtPKR(monthlyBaselineTax)}/month).
-              </p>
-              <p className="text-xs text-emerald-300 leading-relaxed">
-                💡 <strong>How to get it tax-free:</strong> Invest <strong>{(vpsCapPct * 100).toFixed(0)}% of your income ({fmtPKR(recommendedAnnualVPS)}/year or {fmtPKR(recommendedMonthlyVPS)}/month)</strong> into an SECP-approved Pension Fund (e.g. Meezan MTPF or HBL Islamic Pension). That entire investment bypasses income tax, cutting your annual tax bill by <strong>{pctTaxBillSaved.toFixed(1)}%</strong>!
-              </p>
-            </div>
 
-            <div className="flex flex-col items-start md:items-end bg-surface/50 border border-[var(--color-white-5)] rounded-xl p-3 shrink-0">
-              <span className="text-xs text-text-secondary">Cash Tax Savings:</span>
-              <span className="text-2xl font-black text-emerald-400 font-mono">
-                {fmtPKR(vpsTaxRebate)}
-              </span>
-              <span className="text-xs font-medium text-text-secondary mt-0.5">
-                {pctTaxBillSaved.toFixed(1)}% off your tax bill
-              </span>
+              {/* Dynamic feedback message */}
+              {vpsContribution > 0 && (
+                <div className="p-3 rounded-xl bg-surface border border-[var(--color-white-10)] text-xs space-y-1">
+                  <p className="text-text-primary">
+                    💰 <strong>Tax Savings Result:</strong> By investing <strong>{fmtPKR(vpsContribution)}</strong>, you save <strong className="text-emerald-600 dark:text-emerald-400 text-sm font-mono">{fmtPKR(vpsTaxRebate)}</strong> in taxes ({fmtPKR(monthlyTaxSaved)}/month saved in your salary slip).
+                  </p>
+                  <p className="text-text-secondary">
+                    Since your tax rate is <strong>{fmtPct(averageTaxRate)}</strong>, the government essentially gives you a <strong>{fmtPct(averageTaxRate)} instant cashback</strong> on every rupee you put into your pension fund!
+                  </p>
+                  {isOverCap && (
+                    <p className="text-amber-600 dark:text-amber-400 pt-1 font-medium">
+                      ⚠️ Note: FBR legally caps the tax discount at {(vpsCapPct * 100).toFixed(0)}% ({fmtPKR(maxEligibleVpsContribution)}). Your first {fmtPKR(maxEligibleVpsContribution)} earns the full tax rebate. The remaining {fmtPKR(vpsContribution - maxEligibleVpsContribution)} will still grow in your pension fund, but without additional tax credit this year.
+                    </p>
+                  )}
+                  {!isOverCap && remainingCapRoom > 0 && (
+                    <p className="text-emerald-700 dark:text-emerald-400 pt-1 font-medium">
+                      💡 You still have {fmtPKR(remainingCapRoom)} of unused tax-free allowance! Investing it will save you an extra {fmtPKR(remainingCapRoom * averageTaxRate)} in tax.
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-            <Field
-              label="Monthly Salary (PKR)"
-              value={monthlySalary}
-              onChange={(m) => setTaxableIncome(m * 12)}
-              suffix="PKR/mo"
-              step={10000}
-            />
-            <Field
-              label="Annual Salary (PKR)"
-              value={taxableIncome}
-              onChange={setTaxableIncome}
-              suffix="PKR/yr"
-              step={50000}
-            />
-            <Field
-              label="Money Put in Pension Fund"
-              value={vpsContribution}
-              onChange={setVpsContribution}
-              suffix="PKR"
-              step={10000}
-            />
-            <Field
-              label="Your Age (Years)"
-              value={investorAge}
-              onChange={setInvestorAge}
-              suffix="yrs"
-              step={1}
-            />
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+          {/* STEP 3: Summary Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 pt-1">
             <Stat
-              label="Normal Salary Tax"
-              value={fmtPKR(baselineSalaryTax)}
-              sub={`FBR tax: ${fmtPKR(monthlyBaselineTax)} / month`}
+              label="Your FBR Tax Rate"
+              value={fmtPct(averageTaxRate)}
+              sub={`Normal tax: ${fmtPKR(monthlyBaselineTax)} / mo`}
+            />
+            <Stat
+              label="Recommended 20% VPS"
+              value={fmtPKR(recommendedAnnualVPS)}
+              sub={`${fmtPKR(recommendedMonthlyVPS)} / month (Max limit)`}
             />
             <Stat
               label="Tax You Save (Discount)"
               value={fmtPKR(vpsTaxRebate)}
               tone="good"
-              sub={`Save ${fmtPKR(monthlyTaxSaved)} / month in cash`}
-            />
-            <Stat
-              label="% of Tax Bill Saved"
-              value={`${pctTaxBillSaved.toFixed(1)}% OFF`}
-              tone="good"
-              sub={`Instant ${fmtPct(averageTaxRate)} cashback on investment`}
+              sub={`Save ${fmtPKR(monthlyTaxSaved)} / mo in cash`}
             />
             <Stat
               label="Reduced Tax You Pay"
               value={fmtPKR(netSalaryTaxAfterVps)}
               tone={netSalaryTaxAfterVps > 0 ? 'bad' : 'good'}
-              sub={`Now only ${fmtPKR(monthlyNetTax)} / month`}
+              sub={`Now ${fmtPKR(monthlyNetTax)} / mo (${pctTaxBillSaved.toFixed(1)}% off)`}
             />
           </div>
 
           <div className="flex items-start gap-2 text-xs text-text-secondary bg-[var(--color-white-2)] border border-[var(--color-white-5)] rounded-xl p-3">
-            <ShieldCheck size={14} className="mt-0.5 text-emerald-400 shrink-0" />
+            <ShieldCheck size={14} className="mt-0.5 text-emerald-700 dark:text-emerald-400 shrink-0" />
             <p>
-              <strong>Retirement Bonus:</strong> When you reach retirement age (60+), up to <strong>50% of your accumulated pension can be withdrawn completely tax-free</strong>, while the rest provides you with a monthly retirement income.
+              <strong>Retirement Bonus (Section 156A):</strong> When you reach retirement age (60+), up to <strong>50% of your accumulated pension can be withdrawn completely tax-free</strong> in cash, while the remaining 50% pays you a monthly income throughout retirement.
             </p>
           </div>
         </section>
