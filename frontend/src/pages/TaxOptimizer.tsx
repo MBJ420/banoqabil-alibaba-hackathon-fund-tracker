@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import client from '../api/client';
-import { Receipt, TrendingUp, Landmark, Download, Info, HelpCircle, ShieldCheck, AlertCircle } from 'lucide-react';
+import { Receipt, TrendingUp, Landmark, Download, Info, HelpCircle, ShieldCheck, AlertCircle, Sparkles, Zap } from 'lucide-react';
 import { useToast } from '../components/Toast';
 import FeatureInfoModal, { type FeatureGuideContent } from '../components/FeatureInfoModal';
 
@@ -172,6 +172,15 @@ export default function TaxOptimizer() {
   const averageTaxRate = taxableIncome > 0 ? baselineSalaryTax / taxableIncome : 0;
   const vpsTaxRebate = isFiler ? eligibleVpsContribution * averageTaxRate : 0;
   const netSalaryTaxAfterVps = Math.max(0, baselineSalaryTax - vpsTaxRebate);
+
+  // Refined metrics for user advisory & recommendations
+  const monthlySalary = Math.round(taxableIncome / 12);
+  const recommendedAnnualVPS = Math.round(maxEligibleVpsContribution);
+  const recommendedMonthlyVPS = Math.round(recommendedAnnualVPS / 12);
+  const pctTaxBillSaved = baselineSalaryTax > 0 ? (vpsTaxRebate / baselineSalaryTax) * 100 : 0;
+  const monthlyBaselineTax = Math.round(baselineSalaryTax / 12);
+  const monthlyNetTax = Math.round(netSalaryTaxAfterVps / 12);
+  const monthlyTaxSaved = Math.round(vpsTaxRebate / 12);
 
   const downloadAnnexure = () => {
     const lines = [
@@ -431,33 +440,115 @@ export default function TaxOptimizer() {
 
         {/* Section 3: Retirement Pension Tax Discount */}
         <section className="bg-surface border border-[var(--color-white-5)] rounded-2xl p-6 space-y-5">
-          <div>
-            <div className="flex items-center gap-2">
-              <Receipt size={18} className="text-emerald-400" />
-              <h3 className="text-lg font-bold">Retirement Pension Tax Discount (Save on Salary Tax)</h3>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <div className="flex items-center gap-2">
+                <Receipt size={18} className="text-emerald-400" />
+                <h3 className="text-lg font-bold">Retirement Pension Tax Discount (Save on Salary Tax)</h3>
+              </div>
+              <p className="text-xs text-text-secondary mt-1">
+                Enter your salary. The app calculates your FBR income tax and shows how much money you save by putting 20% into a pension fund.
+              </p>
             </div>
-            <p className="text-xs text-text-secondary mt-1">
-              Government incentive: If you put savings into an approved Pakistani Pension Fund (e.g. Meezan Tahaffuz Pension Fund or HBL Islamic Pension Fund), you get a direct cashback/discount on your annual salary tax!
-            </p>
+            {isFiler && baselineSalaryTax > 0 && (
+              <button
+                onClick={() => setVpsContribution(recommendedAnnualVPS)}
+                className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 transition-all cursor-pointer shrink-0 shadow-sm"
+              >
+                <Zap size={14} /> Auto-Set 20% Investment ({fmtPKR(recommendedAnnualVPS)})
+              </button>
+            )}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Field label="Your Annual Salary / Income" value={taxableIncome} onChange={setTaxableIncome} suffix="PKR" step={50000} />
-            <Field label="Money Put in Pension Fund This Year" value={vpsContribution} onChange={setVpsContribution} suffix="PKR" step={10000} />
-            <Field label="Your Age (Years)" value={investorAge} onChange={setInvestorAge} suffix="yrs" step={1} />
+          {/* Smart Recommendation Banner */}
+          <div className="bg-gradient-to-r from-emerald-950/40 via-emerald-900/20 to-transparent border border-emerald-500/30 rounded-2xl p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div className="space-y-1.5 max-w-2xl">
+              <div className="flex items-center gap-2">
+                <Sparkles size={16} className="text-emerald-400" />
+                <span className="text-xs font-bold uppercase tracking-wider text-emerald-400">
+                  FBR Tax Advisor Recommendation
+                </span>
+              </div>
+              <p className="text-sm text-text-primary leading-relaxed">
+                On a salary of <strong>{fmtPKR(monthlySalary)}/month</strong> ({fmtPKR(taxableIncome)}/year), your normal income tax is <strong>{fmtPKR(baselineSalaryTax)}</strong> ({fmtPKR(monthlyBaselineTax)}/month).
+              </p>
+              <p className="text-xs text-emerald-300 leading-relaxed">
+                💡 <strong>How to get it tax-free:</strong> Invest <strong>{(vpsCapPct * 100).toFixed(0)}% of your income ({fmtPKR(recommendedAnnualVPS)}/year or {fmtPKR(recommendedMonthlyVPS)}/month)</strong> into an SECP-approved Pension Fund (e.g. Meezan MTPF or HBL Islamic Pension). That entire investment bypasses income tax, cutting your annual tax bill by <strong>{pctTaxBillSaved.toFixed(1)}%</strong>!
+              </p>
+            </div>
+
+            <div className="flex flex-col items-start md:items-end bg-surface/50 border border-[var(--color-white-5)] rounded-xl p-3 shrink-0">
+              <span className="text-xs text-text-secondary">Cash Tax Savings:</span>
+              <span className="text-2xl font-black text-emerald-400 font-mono">
+                {fmtPKR(vpsTaxRebate)}
+              </span>
+              <span className="text-xs font-medium text-text-secondary mt-0.5">
+                {pctTaxBillSaved.toFixed(1)}% off your tax bill
+              </span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+            <Field
+              label="Monthly Salary (PKR)"
+              value={monthlySalary}
+              onChange={(m) => setTaxableIncome(m * 12)}
+              suffix="PKR/mo"
+              step={10000}
+            />
+            <Field
+              label="Annual Salary (PKR)"
+              value={taxableIncome}
+              onChange={setTaxableIncome}
+              suffix="PKR/yr"
+              step={50000}
+            />
+            <Field
+              label="Money Put in Pension Fund"
+              value={vpsContribution}
+              onChange={setVpsContribution}
+              suffix="PKR"
+              step={10000}
+            />
+            <Field
+              label="Your Age (Years)"
+              value={investorAge}
+              onChange={setInvestorAge}
+              suffix="yrs"
+              step={1}
+            />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-            <Stat label="Normal Annual Salary Tax" value={fmtPKR(baselineSalaryTax)} sub={`Avg Rate: ${fmtPct(averageTaxRate)}`} />
-            <Stat label="Max Pension Eligible for Discount" value={fmtPKR(maxEligibleVpsContribution)} sub={`Allowed up to ${(vpsCapPct * 100).toFixed(0)}% of income`} />
-            <Stat label="Tax You Save (Discount)" value={fmtPKR(vpsTaxRebate)} tone="good" sub="Directly deducted from your tax bill" />
-            <Stat label="Reduced Tax You Pay" value={fmtPKR(netSalaryTaxAfterVps)} tone={netSalaryTaxAfterVps > 0 ? 'bad' : 'good'} sub="Final salary tax after pension discount" />
+            <Stat
+              label="Normal Salary Tax"
+              value={fmtPKR(baselineSalaryTax)}
+              sub={`FBR tax: ${fmtPKR(monthlyBaselineTax)} / month`}
+            />
+            <Stat
+              label="Tax You Save (Discount)"
+              value={fmtPKR(vpsTaxRebate)}
+              tone="good"
+              sub={`Save ${fmtPKR(monthlyTaxSaved)} / month in cash`}
+            />
+            <Stat
+              label="% of Tax Bill Saved"
+              value={`${pctTaxBillSaved.toFixed(1)}% OFF`}
+              tone="good"
+              sub={`Instant ${fmtPct(averageTaxRate)} cashback on investment`}
+            />
+            <Stat
+              label="Reduced Tax You Pay"
+              value={fmtPKR(netSalaryTaxAfterVps)}
+              tone={netSalaryTaxAfterVps > 0 ? 'bad' : 'good'}
+              sub={`Now only ${fmtPKR(monthlyNetTax)} / month`}
+            />
           </div>
 
           <div className="flex items-start gap-2 text-xs text-text-secondary bg-[var(--color-white-2)] border border-[var(--color-white-5)] rounded-xl p-3">
             <ShieldCheck size={14} className="mt-0.5 text-emerald-400 shrink-0" />
             <p>
-              <strong>Retirement Bonus:</strong> When you reach retirement age (60+), up to <strong>50% of your accumulated pension can be withdrawn completely tax-free</strong>.
+              <strong>Retirement Bonus:</strong> When you reach retirement age (60+), up to <strong>50% of your accumulated pension can be withdrawn completely tax-free</strong>, while the rest provides you with a monthly retirement income.
             </p>
           </div>
         </section>
