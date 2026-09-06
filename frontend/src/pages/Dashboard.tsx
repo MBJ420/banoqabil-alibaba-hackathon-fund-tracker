@@ -4,11 +4,13 @@ import client from '../api/client';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import ReactApexChart from 'react-apexcharts';
 import type { ApexOptions } from 'apexcharts';
-import { LogOut, LayoutDashboard, Database, TrendingUp, Zap, ArrowUpRight, Activity, Menu, Download, FileText, Sun, Moon, Calculator, Info, Search, UploadCloud, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Filter, Newspaper, Brain, Lightbulb, X, Eye, EyeOff, PiggyBank, Receipt, LineChart, HelpCircle, RefreshCw } from 'lucide-react';
+import { LogOut, LayoutDashboard, Database, TrendingUp, Zap, ArrowUpRight, Activity, Menu, Download, FileText, Sun, Moon, Calculator, Info, Search, UploadCloud, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Filter, Newspaper, Brain, Lightbulb, X, Eye, EyeOff, PiggyBank, Receipt, LineChart, HelpCircle, RefreshCw, Globe, Sparkles } from 'lucide-react';
 
 import StatementUploadModal from '../components/StatementUploadModal';
 import PortfolioDataManagerModal from '../components/PortfolioDataManagerModal';
+import FinancialCopilotModal from '../components/FinancialCopilotModal';
 import { useToast } from '../components/Toast';
+import { useLanguage } from '../context/LanguageContext';
 import FeatureInfoModal, { type FeatureGuideContent } from '../components/FeatureInfoModal';
 
 import meezanLogo from '../assets/logos/meezan.png';
@@ -122,6 +124,8 @@ const Dashboard = () => {
     const [isDashboardInfoOpen, setIsDashboardInfoOpen] = useState(false);
     const [statements, setStatements] = useState<any[]>([]);
     const [isDataManagerOpen, setIsDataManagerOpen] = useState(false);
+    const [isCopilotOpen, setIsCopilotOpen] = useState(false);
+    const { toggleLanguage, isUrdu, t } = useLanguage();
 
     useEffect(() => {
         const root = window.document.documentElement;
@@ -513,14 +517,14 @@ const Dashboard = () => {
                         <p className={`text-[10px] font-semibold text-text-secondary mb-2 px-3 tracking-wider ${!isSidebarOpen ? 'hidden' : 'block'}`}>OVERVIEW</p>
                         <NavItem
                             icon={<LayoutDashboard size={20} />}
-                            label="Global Portfolio"
+                            label={t('all_institutions', 'Global Portfolio')}
                             active={selectedBank === null && currentPage === '/' && !isDataManagerOpen}
                             isOpen={isSidebarOpen}
                             onClick={() => { setSelectedBank(null); setIsDataManagerOpen(false); navigate('/'); }}
                         />
                         <NavItem
                             icon={<Database size={20} />}
-                            label="Data Ledger"
+                            label={t('data_ledger', 'Data Ledger')}
                             active={isDataManagerOpen}
                             isOpen={isSidebarOpen}
                             onClick={() => setIsDataManagerOpen(true)}
@@ -541,21 +545,21 @@ const Dashboard = () => {
                         <p className={`text-[10px] font-semibold text-text-secondary mb-2 px-3 tracking-wider ${!isSidebarOpen ? 'hidden' : 'block'}`}>MARKET INTEL</p>
                         <NavItem
                             icon={<Newspaper size={20} />}
-                            label="Market News"
+                            label={t('market_news', 'Market News')}
                             active={currentPage === '/news'}
                             isOpen={isSidebarOpen}
                             onClick={() => navigate('/news')}
                         />
                         <NavItem
                             icon={<Brain size={20} />}
-                            label="AI News Insights"
+                            label={t('ai_analysis', 'AI News Insights')}
                             active={currentPage === '/ai-news'}
                             isOpen={isSidebarOpen}
                             onClick={() => navigate('/ai-news')}
                         />
                         <NavItem
                             icon={<Lightbulb size={20} />}
-                            label="Portfolio Suggestions"
+                            label={t('portfolio_suggestions', 'Portfolio Suggestions')}
                             active={currentPage === '/suggestions'}
                             isOpen={isSidebarOpen}
                             onClick={() => navigate('/suggestions')}
@@ -567,21 +571,21 @@ const Dashboard = () => {
                         <p className={`text-[10px] font-semibold text-text-secondary mb-2 px-3 tracking-wider ${!isSidebarOpen ? 'hidden' : 'block'}`}>PLANNER</p>
                         <NavItem
                             icon={<PiggyBank size={20} />}
-                            label="Inflation & SIP"
+                            label={t('inflation_simulator', 'Inflation & SIP')}
                             active={currentPage === '/simulator'}
                             isOpen={isSidebarOpen}
                             onClick={() => navigate('/simulator')}
                         />
                         <NavItem
                             icon={<Receipt size={20} />}
-                            label="Tax Optimizer"
+                            label={t('tax_optimizer', 'Tax Optimizer')}
                             active={currentPage === '/tax'}
                             isOpen={isSidebarOpen}
                             onClick={() => navigate('/tax')}
                         />
                         <NavItem
                             icon={<LineChart size={20} />}
-                            label="Benchmark Alpha"
+                            label={t('benchmark_analyzer', 'Benchmark Alpha')}
                             active={currentPage === '/benchmark'}
                             isOpen={isSidebarOpen}
                             onClick={() => navigate('/benchmark')}
@@ -619,7 +623,9 @@ const Dashboard = () => {
                         </button>
                         <div>
                             <div className="flex items-center gap-3">
-                                <h2 className="text-2xl font-bold tracking-tight text-text-primary">Portfolio Analytics</h2>
+                                <h2 className="text-2xl font-bold tracking-tight text-text-primary">
+                                    {isUrdu ? 'Portfolio Tajziya' : 'Portfolio Analytics'}
+                                </h2>
                                 <button
                                     onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
                                     className="p-1.5 text-text-secondary hover:text-text-primary transition-colors"
@@ -627,38 +633,59 @@ const Dashboard = () => {
                                 >
                                     {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
                                 </button>
+                                {/* Global Language Toggle */}
+                                <button
+                                    onClick={toggleLanguage}
+                                    className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 rounded-lg text-xs font-bold transition-all shadow-xs"
+                                    title={isUrdu ? 'Switch to English' : 'Roman Urdu mein dekhein'}
+                                >
+                                    <Globe size={13} />
+                                    <span>{isUrdu ? '🇵🇰 Roman Urdu' : '🇬🇧 English'}</span>
+                                </button>
                             </div>
-                            <p className="text-text-secondary text-sm">Real-time performance metrics</p>
+                            <p className="text-text-secondary text-sm">
+                                {isUrdu ? 'Live aur haqeeqi maliyati nataij' : 'Real-time performance metrics'}
+                            </p>
                         </div>
                     </div>
 
                     <div className="flex items-center gap-2 flex-wrap">
+                        {/* AI Copilot Button */}
+                        <button
+                            onClick={() => setIsCopilotOpen(true)}
+                            className="flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-lg text-xs font-bold transition-all shadow-sm shadow-emerald-600/20"
+                            title="Open AI Financial Copilot (Qwen 2.5)"
+                        >
+                            <Sparkles size={14} className="text-amber-300" />
+                            <span>{t('ai_copilot', 'AI Copilot')}</span>
+                        </button>
+
                         <button
                             onClick={() => setIsDashboardInfoOpen(true)}
-                            className="flex items-center gap-1.5 px-3 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-lg text-xs font-semibold transition-all shadow-sm"
+                            className="flex items-center gap-1.5 px-3 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 rounded-lg text-xs font-semibold transition-all shadow-sm"
                             title="Platform guide & how it works"
                         >
                             <HelpCircle size={15} />
-                            <span>Guide</span>
+                            <span>{t('guide', 'Guide')}</span>
                         </button>
                         <HeaderButton
                             onClick={() => setIsCalculatorModalOpen(true)}
                             icon={<Calculator size={16} />}
-                            label="Zakat Calc"
+                            label={t('zakat_calc', 'Zakat Calc')}
                         />
                         <HeaderButton
                             onClick={handleExportCSV}
                             icon={<Download size={16} />}
-                            label="Export CSV"
+                            label={t('export_csv', 'Export CSV')}
                         />
                         <HeaderButton
                             onClick={handleExportPDF}
                             icon={<FileText size={16} />}
-                            label="Export PDF"
+                            label={t('export_pdf', 'Export PDF')}
                         />
                         <label className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium transition-all flex items-center gap-2 cursor-pointer shadow-sm shadow-emerald-500/10">
                             {isUploadingFMR ? <Activity size={16} className="animate-spin" /> : <UploadCloud size={16} />}
-                            <span>{isUploadingFMR ? 'Uploading...' : 'Upload FMR'}</span>
+                            <span>{isUploadingFMR ? (isUrdu ? 'Upload ho raha hai...' : 'Uploading...') : t('upload_fmr', 'Upload FMR')}</span>
                             <input type="file" accept=".pdf" className="hidden" onChange={handleFMRUpload} disabled={isUploadingFMR} />
                         </label>
                         <button
@@ -666,7 +693,7 @@ const Dashboard = () => {
                             className="px-4 py-2 bg-[var(--color-white-5)] hover:bg-[var(--color-white-10)] text-text-primary rounded-lg text-sm font-medium transition-all flex items-center gap-2 cursor-pointer"
                         >
                             <UploadCloud size={16} />
-                            <span>Upload Statement</span>
+                            <span>{t('upload_statement', 'Upload Statement')}</span>
                         </button>
                         {selectedBank && (
                             <HeaderButton
@@ -750,7 +777,7 @@ const Dashboard = () => {
                                     <div className="relative flex items-center justify-between mb-2">
                                         <div className="flex items-center gap-2 text-emerald-50/90">
                                             <Activity size={16} />
-                                            <span className="text-xs font-semibold uppercase tracking-wider">Total Net Worth</span>
+                                            <span className="text-xs font-semibold uppercase tracking-wider">{t('net_worth', 'Total Net Worth')}</span>
                                         </div>
                                     </div>
                                     <div className="my-1">
@@ -774,16 +801,16 @@ const Dashboard = () => {
 
                                 {/* 2 Secondary KPI Cards */}
                                 <KPICard
-                                    title="Total Invested"
+                                    title={t('invested_capital', 'Total Invested')}
                                     value={formatPKR(invested)}
-                                    subtitle={invested > 0 ? `≈ ${toCrores(invested)}` : 'Capital Deployed'}
+                                    subtitle={invested > 0 ? `≈ ${toCrores(invested)}` : (isUrdu ? 'Sarmaya Lagaya Gaya' : 'Capital Deployed')}
                                 />
                                 <KPICard
-                                    title="Total Gain / Loss"
+                                    title={t('gain_loss', 'Total Gain / Loss')}
                                     value={formatPKR(gain)}
                                     subtitle={gain !== 0 ? `≈ ${toCrores(gain)}` : undefined}
                                     tone={gain >= 0 ? 'up' : 'down'}
-                                    badge={gain >= 0 ? 'Profit' : 'Loss'}
+                                    badge={gain >= 0 ? (isUrdu ? 'Nafa' : 'Profit') : (isUrdu ? 'Nuqsan' : 'Loss')}
                                 />
                             </div>
                             );
@@ -1048,13 +1075,13 @@ const Dashboard = () => {
                                 <div className="p-6 border-b border-[var(--color-white-5)] flex items-center justify-between">
                                     <h3 className="text-lg font-bold flex items-center gap-2">
                                         <Activity size={20} className="text-emerald-500" />
-                                        Recent Portfolio Updates
+                                        {t('recent_updates', 'Recent Portfolio Updates')}
                                     </h3>
                                     <button 
                                         onClick={() => setIsDataManagerOpen(true)}
                                         className="text-xs font-semibold text-emerald-500 hover:text-emerald-400 transition-colors uppercase tracking-widest flex items-center gap-1.5"
                                     >
-                                        <span>Manage Ledger & History</span>
+                                        <span>{t('view_statement_history', 'Manage Ledger & History')}</span>
                                     </button>
 
                                 </div>
@@ -1062,18 +1089,20 @@ const Dashboard = () => {
                                     <table className="w-full text-left">
                                         <thead>
                                             <tr className="bg-[var(--color-white-5)] text-[10px] uppercase tracking-widest text-text-secondary font-bold">
-                                                <th className="px-6 py-4">Date</th>
-                                                <th className="px-6 py-4">Institution</th>
-                                                <th className="px-6 py-4">Action</th>
-                                                <th className="px-6 py-4 text-right">Amount (PKR)</th>
-                                                <th className="px-6 py-4 text-center">Status</th>
+                                                <th className="px-6 py-4">{isUrdu ? 'Tareekh' : 'Date'}</th>
+                                                <th className="px-6 py-4">{t('bank_amc', 'Institution')}</th>
+                                                <th className="px-6 py-4">{isUrdu ? 'Amal' : 'Action'}</th>
+                                                <th className="px-6 py-4 text-right">{isUrdu ? 'Raqam (PKR)' : 'Amount (PKR)'}</th>
+                                                <th className="px-6 py-4 text-center">{isUrdu ? 'Tasdeeq' : 'Status'}</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-[var(--color-white-5)]">
                                             {(statements || []).length === 0 ? (
                                                 <tr>
                                                     <td colSpan={5} className="px-6 py-8 text-center text-text-secondary">
-                                                        No statement history yet. Upload an FMR or statement PDF to begin tracking.
+                                                        {isUrdu 
+                                                            ? 'Abhi koi statement history nahi mili. FMR ya statement PDF upload karein.' 
+                                                            : 'No statement history yet. Upload an FMR or statement PDF to begin tracking.'}
                                                     </td>
                                                 </tr>
                                             ) : (
@@ -1580,6 +1609,30 @@ const Dashboard = () => {
                 ) : (
                     <Outlet />
                 )}
+
+            {/* Floating Quick Action for AI Copilot */}
+            <button
+                onClick={() => setIsCopilotOpen(true)}
+                className="fixed bottom-6 right-6 z-40 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white p-3.5 sm:px-5 sm:py-3 rounded-full shadow-xl shadow-emerald-600/30 flex items-center gap-2.5 transition-all transform hover:scale-105 group border border-emerald-400/30 cursor-pointer"
+                title={isUrdu ? "AI Maliyati Mashweer se mashwara karein" : "Chat with AI Financial Copilot (Qwen 2.5)"}
+            >
+                <div className="relative">
+                    <Sparkles size={20} className="text-amber-300" />
+                    <span className="absolute -top-1 -right-1 w-2 h-2 bg-amber-400 rounded-full animate-ping" />
+                </div>
+                <span className="font-bold text-sm hidden sm:inline">
+                    {isUrdu ? "AI Maliyati Mashweer" : "AI Financial Copilot"}
+                </span>
+                <span className="text-[10px] bg-white/20 px-2 py-0.5 rounded-full font-mono uppercase hidden sm:inline">
+                    Qwen 2.5
+                </span>
+            </button>
+
+            {/* AI Financial Copilot Modal */}
+            <FinancialCopilotModal
+                isOpen={isCopilotOpen}
+                onClose={() => setIsCopilotOpen(false)}
+            />
             </main>
         </div>
     );

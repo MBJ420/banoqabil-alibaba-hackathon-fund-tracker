@@ -7,6 +7,7 @@ from collections import defaultdict
 import json
 import logging
 from datetime import datetime, timedelta
+from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
 
@@ -793,5 +794,47 @@ def run_ai_portfolio_diagnostic(
             status_code=503,
             detail=f"AI diagnostic temporarily unavailable: {str(e)}"
         )
+
+
+# ─── POST /dashboard/copilot ──────────────────────────────────────────────────
+
+class CopilotChatRequest(BaseModel):
+    message: str
+    language: Optional[str] = "ur"
+    history: Optional[List[Dict[str, Any]]] = []
+
+@router.post("/copilot", response_model=Dict[str, Any])
+def chat_with_financial_copilot(
+    body: CopilotChatRequest,
+    current_user: schemas.User = Depends(utils.get_current_user),
+    db: Session = Depends(database.get_db)
+):
+    """
+    Conversational AI Financial Copilot (Maliyati Mashweer) powered by Alibaba Cloud Qwen 2.5.
+    Supports questions in Roman Urdu and English, personalizing answers with the user's
+    portfolio composition while strictly preserving privacy.
+    """
+    from app.services.portfolio_ai_service import run_copilot_chat
+
+    if not body.message or not body.message.strip():
+        raise HTTPException(status_code=400, detail="Message cannot be empty.")
+
+    try:
+        result = run_copilot_chat(
+            db=db,
+            user_id=current_user.id,
+            username=current_user.username,
+            message=body.message.strip(),
+            language=body.language or "ur",
+            history=body.history or []
+        )
+        return result
+    except Exception as e:
+        logger.error(f"Copilot chat failed for user {current_user.id}: {e}")
+        raise HTTPException(
+            status_code=503,
+            detail=f"Financial copilot temporarily unavailable: {str(e)}"
+        )
+
 
 

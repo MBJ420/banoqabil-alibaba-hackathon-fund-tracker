@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import client from '../api/client';
 import { useToast } from './Toast';
+import { useLanguage } from '../context/LanguageContext';
 import {
   X,
   Database,
@@ -84,6 +85,7 @@ const DEFAULT_BANKS = ['Meezan', 'HBL', 'Atlas', 'Faysal'];
 
 export const PortfolioDataManagerModal: React.FC<Props> = ({ isOpen, onClose, onDataChanged }) => {
   const { toast } = useToast();
+  const { isUrdu } = useLanguage();
 
   const [activeTab, setActiveTab] = useState<'ledger' | 'manual'>('ledger');
   const [statements, setStatements] = useState<StatementRecord[]>([]);
@@ -406,13 +408,17 @@ export const PortfolioDataManagerModal: React.FC<Props> = ({ isOpen, onClose, on
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-xl font-bold text-text-primary tracking-tight">Portfolio Data Manager</h2>
+                <h2 className="text-xl font-bold text-text-primary tracking-tight">
+                  {isUrdu ? 'Portfolio Data Manager' : 'Portfolio Data Manager'}
+                </h2>
                 <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
-                  Database Ledger GUI
+                  {isUrdu ? 'Database Ledger' : 'Database Ledger GUI'}
                 </span>
               </div>
               <p className="text-xs text-text-secondary mt-0.5">
-                Inspect, edit parsed statement records, delete incorrect data, or manually record monthly figures.
+                {isUrdu
+                  ? 'Statement ki history dekhiye, data manage kijiye, ya naya mahina darj karein.'
+                  : 'Inspect, edit parsed statement records, delete incorrect data, or manually record monthly figures.'}
               </p>
             </div>
           </div>
@@ -437,7 +443,7 @@ export const PortfolioDataManagerModal: React.FC<Props> = ({ isOpen, onClose, on
               }`}
             >
               <Layers size={14} />
-              <span>Statements & Holdings Ledger</span>
+              <span>{isUrdu ? 'Statement History & Ledger' : 'Statements & Holdings Ledger'}</span>
               <span className="ml-1 px-1.5 py-0.2 bg-black/20 text-text-secondary rounded-full text-[10px]">
                 {statements.length}
               </span>
@@ -452,7 +458,7 @@ export const PortfolioDataManagerModal: React.FC<Props> = ({ isOpen, onClose, on
               }`}
             >
               <Plus size={14} />
-              <span>Manual Month Entry</span>
+              <span>{isUrdu ? 'Nayi Entry Karein' : 'Manual Month Entry'}</span>
             </button>
           </div>
 

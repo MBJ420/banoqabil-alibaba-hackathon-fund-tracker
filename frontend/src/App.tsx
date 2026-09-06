@@ -11,11 +11,13 @@ import TaxOptimizer from './pages/TaxOptimizer';
 import BenchmarkAnalyzer from './pages/BenchmarkAnalyzer';
 import ErrorBoundary from './components/ErrorBoundary';
 import ToastProvider from './components/Toast';
+import { LanguageProvider } from './context/LanguageContext';
 
 function App() {
   return (
-    <ToastProvider>
-      <Router>
+    <LanguageProvider>
+      <ToastProvider>
+        <Router>
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
@@ -37,6 +39,7 @@ function App() {
         </Routes>
       </Router>
     </ToastProvider>
+  </LanguageProvider>
   );
 }
 

@@ -18,7 +18,7 @@ from sqlalchemy.orm import Session
 from app.models import (
     Portfolio, Statement, WorldContextEntry, AssetPrediction
 )
-from app.services.llm_service import generate_json, get_active_ai_provider
+from app.services.llm_service import generate_json, generate_text, get_active_ai_provider
 
 logger = logging.getLogger(__name__)
 
@@ -290,3 +290,102 @@ Return only the JSON diagnostic object."""
     result["ai_model"]    = provider.get("model", "Unknown")
 
     return result
+
+
+# ─── BILINGUAL AI FINANCIAL COPILOT (ALIBABA CLOUD QWEN 2.5) ──────────────────
+
+COPILOT_ROMAN_URDU_SYSTEM_PROMPT = """You are 'Maliyati Mashweer' (AI Financial Copilot) in Pakistan Fund Tracker, an expert, warm, and highly practical mutual funds mentor designed specifically for Pakistani retail investors.
+
+You must communicate in clear, natural, everyday **Roman Urdu** (Urdu written in the English/Latin alphabet, exactly as educated Pakistanis write on WhatsApp/SMS, e.g., "Aapka portfolio bohot mutawazin (balanced) hai...", "Yeh fund inflation yani mehngai k samnay...", "Zakat k mamlay mein...").
+
+Context about the user:
+- You have access to the user's sanitized portfolio snapshot (holdings, % allocations, returns, bank names) and live Pakistani market/macro context (SBP policy rate, PSX sentiment, inflation).
+- PRIVACY: You do not know and must NEVER ask for personal identification (CNIC, bank account numbers, exact salary, or home address).
+
+Guidelines for your answers:
+1. Warm & Respectful: Start with a natural Pakistani financial greeting (e.g., "Assalam-o-Alaikum!", "Khushamdeed!").
+2. Plain Financial Language: Explain jargon simply in Roman Urdu. If you use a term like "NAV", explain it as "unit ki qeemat"; "Expense Ratio" as "management fee"; "Inflation" as "mehngai ka asar"; "Capital Gains Tax" as "munafay par tax".
+3. Localized to Pakistani Reality: Specifically reference Pakistani institutions (Meezan Bank, HBL Funds, Atlas Funds, Faysal Funds, SBP, FBR, MUFAP, PSX).
+4. Balanced & Objective: Acknowledge that all investments carry market risk. Never promise guaranteed future returns, but guide on smart asset allocation (Money Market vs. Equity vs. VPS Pension funds).
+5. Formatting: Use bullet points, bold text for key fund names or numbers, and keep responses concise, engaging, and easy to read.
+"""
+
+COPILOT_ENGLISH_SYSTEM_PROMPT = """You are the AI Financial Copilot in Pakistan Fund Tracker, an expert, objective, and empathetic mutual fund advisor for Pakistani retail investors.
+
+Context about the user:
+- You have access to the user's sanitized portfolio snapshot (holdings, % allocations, returns, bank names) and live Pakistani market/macro context (SBP policy rate, PSX sentiment, inflation).
+- PRIVACY: You do not know and must NEVER ask for personal identification (CNIC, bank account numbers, or address).
+
+Guidelines for your answers:
+1. Direct, actionable, and educational financial advice aligned with SECP NBFC regulations and Pakistani mutual funds (Meezan, HBL, Atlas, Faysal, etc.).
+2. Relate fund returns to real-world Pakistani macroeconomic benchmarks (SBP policy rate, CPI inflation, KSE-100 / KMI-30 indices, and Section 37A/63 tax rules).
+3. Use clean formatting with bullet points and bold highlights for readability.
+"""
+
+
+def run_copilot_chat(
+    db: Session,
+    user_id: int,
+    username: str,
+    message: str,
+    language: str = "ur",
+    history: list = None
+) -> dict:
+    """
+    Handles conversational financial inquiries from the user in either Roman Urdu or English.
+    Grounds answers in the user's real portfolio allocations and live Pakistani macro context.
+    """
+    payload = build_portfolio_payload(db, user_id, username)
+    is_roman_urdu = (language or "").lower() in ["ur", "roman_urdu", "urdu"]
+
+    system_prompt = COPILOT_ROMAN_URDU_SYSTEM_PROMPT if is_roman_urdu else COPILOT_ENGLISH_SYSTEM_PROMPT
+
+    portfolio_context_str = ""
+    if payload:
+        portfolio_context_str = f"""USER'S CURRENT PORTFOLIO SNAPSHOT (PRIVACY-PRESERVED):
+- Bank Concentration: {json.dumps(payload['portfolio_snapshot']['bank_concentration'])}
+- Category Allocation: {json.dumps(payload['portfolio_snapshot']['category_allocation'])}
+- Fund Holdings: {json.dumps(payload['portfolio_snapshot']['holdings'])}
+- Overall Return: {payload['portfolio_snapshot']['overall_gain_loss_pct']}%
+- Has Equity Exposure: {payload['portfolio_snapshot']['has_equity']}
+- Has Islamic Fund Exposure: {payload['portfolio_snapshot']['has_islamic']}
+
+LIVE PAKISTANI MARKET & MACRO CONTEXT:
+{json.dumps(payload['market_context'], indent=2)}
+"""
+    else:
+        portfolio_context_str = "USER PORTFOLIO STATUS: No statement uploaded yet. (Politely invite them to upload their first statement from Meezan, HBL, Atlas, or Faysal, while answering their general financial query)."
+
+    # Format history turns if provided
+    history_str = ""
+    if history and isinstance(history, list):
+        formatted_turns = []
+        for turn in history[-6:]: # keep last 6 turns for context
+            sender = "User" if turn.get("role") == "user" else "Copilot"
+            text = turn.get("content", "")
+            if text:
+                formatted_turns.append(f"{sender}: {text}")
+        if formatted_turns:
+            history_str = "PREVIOUS CONVERSATION CONTEXT:\n" + "\n".join(formatted_turns) + "\n\n"
+
+    final_user_prompt = f"""{portfolio_context_str}
+
+{history_str}USER QUESTION:
+{message}
+
+Please respond to the user based on their question and portfolio context."""
+
+    response_text = generate_text(
+        prompt=final_user_prompt,
+        system_prompt=system_prompt,
+        temperature=0.4,
+    )
+
+    provider = get_active_ai_provider()
+    return {
+        "response": response_text,
+        "language": "roman_urdu" if is_roman_urdu else "en",
+        "ai_provider": provider.get("provider", "Alibaba Cloud Model Studio"),
+        "ai_model": provider.get("model", "Qwen 2.5"),
+    }
+
