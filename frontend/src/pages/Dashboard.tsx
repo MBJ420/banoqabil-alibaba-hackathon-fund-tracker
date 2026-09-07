@@ -4,11 +4,10 @@ import client from '../api/client';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import ReactApexChart from 'react-apexcharts';
 import type { ApexOptions } from 'apexcharts';
-import { LogOut, LayoutDashboard, Database, TrendingUp, Zap, ArrowUpRight, Activity, Menu, Download, FileText, Sun, Moon, Scale, Info, Search, UploadCloud, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Filter, Newspaper, Brain, Lightbulb, X, Eye, EyeOff, PiggyBank, Receipt, LineChart, HelpCircle, RefreshCw, Globe, Sparkles } from 'lucide-react';
+import { LogOut, LayoutDashboard, Database, TrendingUp, Zap, ArrowUpRight, Activity, Menu, Download, FileText, Sun, Moon, Scale, Info, Search, UploadCloud, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Filter, Newspaper, Brain, Lightbulb, X, Eye, EyeOff, PiggyBank, Receipt, LineChart, HelpCircle, RefreshCw, Globe } from 'lucide-react';
 
 import StatementUploadModal from '../components/StatementUploadModal';
 import PortfolioDataManagerModal from '../components/PortfolioDataManagerModal';
-import FinancialCopilotModal from '../components/FinancialCopilotModal';
 import IslamicZakatModal from '../components/IslamicZakatModal';
 import { useToast } from '../components/Toast';
 import { useLanguage } from '../context/LanguageContext';
@@ -125,8 +124,7 @@ const Dashboard = () => {
     const [isDashboardInfoOpen, setIsDashboardInfoOpen] = useState(false);
     const [statements, setStatements] = useState<any[]>([]);
     const [isDataManagerOpen, setIsDataManagerOpen] = useState(false);
-    const [isCopilotOpen, setIsCopilotOpen] = useState(false);
-    const { toggleLanguage, isUrdu, t } = useLanguage();
+    const { toggleLanguage, setLanguage, isUrdu, t } = useLanguage();
 
     useEffect(() => {
         const root = window.document.documentElement;
@@ -607,11 +605,59 @@ const Dashboard = () => {
 
                 </nav>
 
-                <div className="p-3 border-t border-[var(--color-white-5)]">
-                    <button onClick={handleLogout} className={`flex items-center gap-3 text-text-secondary hover:text-text-primary hover:bg-[var(--color-white-5)] p-3 rounded-xl transition-all w-full group ${!isSidebarOpen && 'justify-center'}`} title={!isSidebarOpen ? "Logout" : ""}>
-                        <LogOut size={20} className="group-hover:text-danger transition-colors shrink-0" />
-                        {isSidebarOpen && <span className="font-medium whitespace-nowrap">Logout</span>}
-                    </button>
+                <div className="p-3 border-t border-[var(--color-white-5)] space-y-2">
+                    {/* Language Switcher */}
+                    {isSidebarOpen ? (
+                        <div className="bg-[var(--color-white-5)] border border-[var(--color-white-10)] rounded-xl p-1 flex items-center text-xs font-semibold">
+                            <button
+                                onClick={() => setLanguage('en')}
+                                className={`flex-1 py-1.5 px-2 rounded-lg transition-all text-center flex items-center justify-center gap-1.5 cursor-pointer ${
+                                    !isUrdu ? 'bg-emerald-600 text-white shadow-sm font-bold' : 'text-text-secondary hover:text-text-primary'
+                                }`}
+                                title="Switch to English"
+                            >
+                                <span>🇬🇧 English</span>
+                            </button>
+                            <button
+                                onClick={() => setLanguage('ur')}
+                                className={`flex-1 py-1.5 px-2 rounded-lg transition-all text-center flex items-center justify-center gap-1.5 cursor-pointer ${
+                                    isUrdu ? 'bg-emerald-600 text-white shadow-sm font-bold' : 'text-text-secondary hover:text-text-primary'
+                                }`}
+                                title="Roman Urdu mein dekhein"
+                            >
+                                <span>🇵🇰 Roman Urdu</span>
+                            </button>
+                        </div>
+                    ) : (
+                        <button
+                            onClick={toggleLanguage}
+                            className="p-2.5 w-full flex items-center justify-center text-text-secondary hover:text-text-primary hover:bg-[var(--color-white-5)] rounded-xl transition-all cursor-pointer"
+                            title={isUrdu ? 'Switch to English' : 'Switch to Roman Urdu'}
+                        >
+                            <Globe size={18} className="text-emerald-500" />
+                        </button>
+                    )}
+
+                    {/* Theme & Logout Row */}
+                    <div className="flex items-center gap-1.5">
+                        <button
+                            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                            className={`flex items-center gap-2 p-2.5 text-text-secondary hover:text-text-primary hover:bg-[var(--color-white-5)] rounded-xl transition-all cursor-pointer ${isSidebarOpen ? 'flex-1 justify-center' : 'w-full justify-center'}`}
+                            title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} Mode`}
+                        >
+                            {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+                            {isSidebarOpen && <span className="text-xs font-medium">{theme === 'dark' ? 'Light' : 'Dark'}</span>}
+                        </button>
+
+                        <button
+                            onClick={handleLogout}
+                            className={`flex items-center gap-2 text-text-secondary hover:text-danger hover:bg-danger/10 p-2.5 rounded-xl transition-all cursor-pointer ${isSidebarOpen ? 'flex-1 justify-center' : 'w-full justify-center'}`}
+                            title="Logout"
+                        >
+                            <LogOut size={18} className="shrink-0" />
+                            {isSidebarOpen && <span className="text-xs font-medium">Logout</span>}
+                        </button>
+                    </div>
                 </div>
             </aside>
 
@@ -635,27 +681,9 @@ const Dashboard = () => {
                             <Menu size={20} />
                         </button>
                         <div>
-                            <div className="flex items-center gap-3">
-                                <h2 className="text-2xl font-bold tracking-tight text-text-primary">
-                                    {isUrdu ? 'Portfolio Tajziya' : 'Portfolio Analytics'}
-                                </h2>
-                                <button
-                                    onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                                    className="p-1.5 text-text-secondary hover:text-text-primary transition-colors"
-                                    title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} Mode`}
-                                >
-                                    {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
-                                </button>
-                                {/* Global Language Toggle */}
-                                <button
-                                    onClick={toggleLanguage}
-                                    className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 rounded-lg text-xs font-bold transition-all shadow-xs"
-                                    title={isUrdu ? 'Switch to English' : 'Roman Urdu mein dekhein'}
-                                >
-                                    <Globe size={13} />
-                                    <span>{isUrdu ? '🇵🇰 Roman Urdu' : '🇬🇧 English'}</span>
-                                </button>
-                            </div>
+                            <h2 className="text-2xl font-bold tracking-tight text-text-primary">
+                                {isUrdu ? 'Portfolio Tajziya' : 'Portfolio Analytics'}
+                            </h2>
                             <p className="text-text-secondary text-sm">
                                 {isUrdu ? 'Live aur haqeeqi maliyati nataij' : 'Real-time performance metrics'}
                             </p>
@@ -663,19 +691,19 @@ const Dashboard = () => {
                     </div>
 
                     <div className="flex items-center gap-2 flex-wrap">
-                        {/* AI Copilot Button */}
+                        {/* Clean Header Language Switcher */}
                         <button
-                            onClick={() => setIsCopilotOpen(true)}
-                            className="flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-lg text-xs font-bold transition-all shadow-sm shadow-emerald-600/20"
-                            title="Open AI Financial Copilot (Qwen 2.5)"
+                            onClick={toggleLanguage}
+                            className="flex items-center gap-1.5 px-3 py-2 bg-surface hover:bg-[var(--color-white-5)] border border-[var(--color-white-10)] hover:border-emerald-500/40 text-text-secondary hover:text-text-primary rounded-xl text-xs font-semibold transition-all shadow-xs cursor-pointer"
+                            title={isUrdu ? 'Switch to English' : 'Roman Urdu mein dekhein'}
                         >
-                            <Sparkles size={14} className="text-amber-300" />
-                            <span>{t('ai_copilot', 'AI Copilot')}</span>
+                            <Globe size={14} className="text-emerald-500" />
+                            <span>{isUrdu ? '🇵🇰 Roman Urdu' : '🇬🇧 English'}</span>
                         </button>
 
                         <button
                             onClick={() => setIsDashboardInfoOpen(true)}
-                            className="flex items-center gap-1.5 px-3 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 rounded-lg text-xs font-semibold transition-all shadow-sm"
+                            className="flex items-center gap-1.5 px-3 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 rounded-xl text-xs font-semibold transition-all shadow-sm cursor-pointer"
                             title="Platform guide & how it works"
                         >
                             <HelpCircle size={15} />
@@ -1568,30 +1596,6 @@ const Dashboard = () => {
                 ) : (
                     <Outlet />
                 )}
-
-            {/* Floating Quick Action for AI Copilot */}
-            <button
-                onClick={() => setIsCopilotOpen(true)}
-                className="fixed bottom-6 right-6 z-40 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white p-3.5 sm:px-5 sm:py-3 rounded-full shadow-xl shadow-emerald-600/30 flex items-center gap-2.5 transition-all transform hover:scale-105 group border border-emerald-400/30 cursor-pointer"
-                title={isUrdu ? "AI Maliyati Mashweer se mashwara karein" : "Chat with AI Financial Copilot (Qwen 2.5)"}
-            >
-                <div className="relative">
-                    <Sparkles size={20} className="text-amber-300" />
-                    <span className="absolute -top-1 -right-1 w-2 h-2 bg-amber-400 rounded-full animate-ping" />
-                </div>
-                <span className="font-bold text-sm hidden sm:inline">
-                    {isUrdu ? "AI Maliyati Mashweer" : "AI Financial Copilot"}
-                </span>
-                <span className="text-[10px] bg-white/20 px-2 py-0.5 rounded-full font-mono uppercase hidden sm:inline">
-                    Qwen 2.5
-                </span>
-            </button>
-
-            {/* AI Financial Copilot Modal */}
-            <FinancialCopilotModal
-                isOpen={isCopilotOpen}
-                onClose={() => setIsCopilotOpen(false)}
-            />
             </main>
         </div>
     );

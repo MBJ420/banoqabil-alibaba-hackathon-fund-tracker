@@ -29,8 +29,8 @@ const DICTIONARY: Record<string, { en: string; ur: string }> = {
   // Sidebar Items
   all_institutions: { en: 'All Institutions', ur: 'Tamam Banks' },
   market_news: { en: 'Market News', ur: 'Market Khabrain' },
-  ai_analysis: { en: 'AI Analysis', ur: 'AI Tajziya' },
-  portfolio_suggestions: { en: 'Portfolio Suggestions', ur: 'Portfolio Mashwaray' },
+  ai_analysis: { en: 'FundTracker AI Insights', ur: 'FundTracker AI Tajziya' },
+  portfolio_suggestions: { en: 'FundTracker AI Suggestions', ur: 'FundTracker AI Mashwaray' },
   inflation_simulator: { en: 'Inflation Simulator', ur: 'Mehngai (Inflation) Simulator' },
   tax_optimizer: { en: 'Tax Optimizer', ur: 'Tax Bachat Optimizer' },
   benchmark_analyzer: { en: 'Benchmark Analyzer', ur: 'Market Muqabla (Benchmark)' },

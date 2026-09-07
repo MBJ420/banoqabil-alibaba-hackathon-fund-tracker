@@ -247,10 +247,10 @@ export default function PortfolioSuggestions() {
                   <div>
                     <h3 className="text-lg font-bold flex items-center gap-2">
                       <BrainCircuit size={20} className="text-violet-400" />
-                      AI Portfolio Diagnostic
+                      FundTracker AI Portfolio Analysis
                       <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-violet-500/20 text-violet-300 border border-violet-500/30 flex items-center gap-1">
                         <Sparkles size={9} />
-                        Alibaba Cloud · {diagData ? diagData.ai_model : 'Qwen'}
+                        FundTracker AI, powered by Qwen
                       </span>
                     </h3>
                     <p className="text-xs text-text-secondary mt-1">
@@ -266,7 +266,7 @@ export default function PortfolioSuggestions() {
                       ? <><RefreshCw size={13} className="animate-spin" /> Analyzing…</>
                       : diagData
                         ? <><RefreshCw size={13} /> Re-run Diagnostic</>
-                        : <><BrainCircuit size={13} /> Run AI Diagnostic</>
+                        : <><BrainCircuit size={13} /> Run FundTracker AI Analysis</>
                     }
                   </button>
                 </div>
@@ -275,7 +275,7 @@ export default function PortfolioSuggestions() {
                 {diagLoading && (
                   <div className="flex flex-col items-center gap-3 py-10 text-text-secondary">
                     <div className="w-10 h-10 rounded-full border-2 border-violet-500/40 border-t-violet-400 animate-spin" />
-                    <p className="text-sm">Qwen 2.5 is analyzing your portfolio structure and macro context…</p>
+                    <p className="text-sm">FundTracker AI, powered by Qwen is analyzing your portfolio structure and macro context…</p>
                   </div>
                 )}
 
@@ -291,8 +291,8 @@ export default function PortfolioSuggestions() {
                 {!diagLoading && !diagData && !diagError && (
                   <div className="flex flex-col items-center gap-2 py-10 text-text-secondary border border-dashed border-white/10 rounded-xl">
                     <BrainCircuit size={30} className="text-violet-500/40" />
-                    <p className="text-sm">Click <strong className="text-violet-400">Run AI Diagnostic</strong> to generate your personalized risk analysis.</p>
-                    <p className="text-xs opacity-60">Uses live macro context from the AI News module.</p>
+                    <p className="text-sm">Click <strong className="text-violet-400">Run FundTracker AI Analysis</strong> to generate your personalized risk analysis.</p>
+                    <p className="text-xs opacity-60">Uses live macro context from the FundTracker AI Market module.</p>
                   </div>
                 )}
 
