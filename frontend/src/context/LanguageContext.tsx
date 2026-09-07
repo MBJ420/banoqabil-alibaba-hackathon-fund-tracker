@@ -85,6 +85,38 @@ const DICTIONARY: Record<string, { en: string; ur: string }> = {
     en: 'How can I save tax under Section 63 VPS?',
     ur: 'Section 63 VPS k zariye main kitna tax bacha sakta hoon?'
   },
+
+  // Zakat Terminal Strings
+  zakat_modal_title: { en: 'Shariah Zakat & Wealth Purification Terminal', ur: 'Shariah Zakat aur Wealth Purification Terminal' },
+  zakat_modal_subtitle: { en: 'Calculated in compliance with AAOIFI Standard No. 35 & SBP Nisab guidelines', ur: 'AAOIFI Standard No. 35 aur SBP Nisab k mutabiq tayyar kardah' },
+  tab_calculator: { en: 'Calculator & Portfolio', ur: 'Zakat Calculator & Tafseelat' },
+  tab_derivations: { en: 'Religious & Financial Derivation', ur: 'Fiqh aur Maliyati Usool' },
+  tab_sources: { en: 'Authoritative Sources & Disclaimers', ur: 'Mustanad Hawala Jaat & Wazahat' },
+  nisab_config: { en: 'Nisab Threshold Configuration', ur: 'Nisab ki Raqam aur Chandi/Sona' },
+  silver_standard: { en: 'Silver Standard (52.5 Tolas / 612.36g)', ur: 'Chandi ka Nisab (52.5 Tola / 612.36g)' },
+  gold_standard: { en: 'Gold Standard (7.5 Tolas / 87.48g)', ur: 'Sone ka Nisab (7.5 Tola / 87.48g)' },
+  market_disclaimer: {
+    en: 'Notice: Gold and silver market prices do not update automatically in real-time. Please adjust the rate to match today\'s local Sarafa Bazar / SBP rate.',
+    ur: 'Notice: Sone aur chandi ki qeematein khud-ba-khud update nahi hoteen, baraye meherbani aaj ka sarafa rate darj kijiye.'
+  },
+  sahib_e_nisab: { en: 'Sahib-e-Nisab (Zakat Obligatory)', ur: 'Sahib-e-Nisab (Zakat Farz Hai)' },
+  below_nisab: { en: 'Below Nisab (Zakat Due: PKR 0.00)', ur: 'Nisab se Kam (Zakat Wajib Nahi: PKR 0.00)' },
+  calendar_basis: { en: 'Calculation Basis', ur: 'Hisaab ka Saal' },
+  lunar_basis: { en: 'Hijri Lunar Year (2.5% - Default)', ur: 'Hijri Qamri Saal (2.5% - Asal Usool)' },
+  solar_basis: { en: 'Gregorian Solar Year (2.577%)', ur: 'Shamsi Iswi Saal (2.577% - Tax Year)' },
+  equity_zakatable_ratio: { en: 'Equity Working Capital Ratio', ur: 'Equity Funds ka Working Capital Ratio' },
+  prudent_default_28: { en: '28% Prudent Ceiling (Recommended)', ur: '28% Ihtiyat Ceiling (Sifarish Kardah)' },
+  conservative_100: { en: '100% Full Market Value', ur: '100% Mukammal Maliyat (Conservative)' },
+  balanced_fund_card_title: { en: 'What is a Balanced / Asset Allocation Fund?', ur: 'Balanced / Asset Allocation Fund kya hai?' },
+  balanced_fund_card_desc: {
+    en: 'A hybrid fund investing across both equities (stocks) and debt/money market instruments (typically ~50/50). Shariah rules mandate 100% on cash/debt and ~28% on equities working capital, giving an effective ~64% weighted blend.',
+    ur: 'Yeh aik hybrid fund hai jo shares aur naqad/sukuk dono mein sarmayakari karta hai (~50/50). Shariah k mutabiq naqad/sukuk par 100% aur shares k working capital par ~28% zakat lagti hai, jis se ausat ~64% banti hai.'
+  },
+  total_zakatable_base: { en: 'Total Zakatable Base', ur: 'Kul Zakatable Sarmaya' },
+  total_zakat_due: { en: 'Total Zakat Due', ur: 'Kul Ada Kardah Zakat' },
+  post_zakat_net_worth: { en: 'Post-Zakat Net Worth', ur: 'Zakat k Baad Baqi Maliyat' },
+  dividend_purification: { en: 'Dividend Purification (Taharah)', ur: 'Dividend ki Shariah Safai (Taharah)' },
+  export_tax_certificate: { en: 'Export Section 60 Tax Certificate', ur: 'Section 60 Tax Certificate Print Karein' },
 };
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);

@@ -9,6 +9,7 @@ import { LogOut, LayoutDashboard, Database, TrendingUp, Zap, ArrowUpRight, Activ
 import StatementUploadModal from '../components/StatementUploadModal';
 import PortfolioDataManagerModal from '../components/PortfolioDataManagerModal';
 import FinancialCopilotModal from '../components/FinancialCopilotModal';
+import IslamicZakatModal from '../components/IslamicZakatModal';
 import { useToast } from '../components/Toast';
 import { useLanguage } from '../context/LanguageContext';
 import FeatureInfoModal, { type FeatureGuideContent } from '../components/FeatureInfoModal';
@@ -1161,62 +1162,13 @@ const Dashboard = () => {
                 />
 
 
-                {/* Calculator Modal Overlay */}
-                {isCalculatorModalOpen && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-                        <div className="bg-surface border border-[var(--color-white-10)] rounded-3xl p-8 max-w-lg w-full shadow-2xl relative">
-                            <button
-                                onClick={() => setIsCalculatorModalOpen(false)}
-                                className="absolute top-4 right-4 p-2 text-text-secondary hover:text-text-primary bg-[var(--color-white-5)] hover:bg-[var(--color-white-10)] rounded-full transition-colors"
-                            >
-                                <X size={16} />
-                            </button>
-
-                            <div className="flex items-center gap-3 mb-6">
-                                <div className="p-3 bg-emerald-500/20 text-emerald-500 rounded-2xl">
-                                    <Calculator size={28} />
-                                </div>
-                                <div>
-                                    <h2 className="text-2xl font-bold">Zakat Calculator</h2>
-                                    <p className="text-sm text-text-secondary">Estimated liabilities based on current Net Worth</p>
-                                </div>
-                            </div>
-
-                            <div className="space-y-4">
-                                <div className="p-4 bg-[var(--color-white-5)] rounded-2xl flex justify-between items-center">
-                                    <span className="text-text-secondary">Total Net Worth</span>
-                                    <span className="font-bold text-lg">PKR {(summary.total_net_worth || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                                </div>
-
-                                <div className="p-4 bg-[var(--color-white-5)] border border-accent-pink/20 rounded-2xl flex justify-between items-center group hover:border-accent-pink/50 transition-colors">
-                                    <div>
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-accent-pink font-semibold">Zakat Liability</span>
-                                            <span className="text-xs px-2 py-0.5 bg-accent-pink/10 text-accent-pink rounded-md">2.5%</span>
-                                        </div>
-                                        <p className="text-xs text-text-secondary mt-1">Calculated on Total Net Worth</p>
-                                    </div>
-                                    <span className="font-bold text-lg text-accent-pink">
-                                        - PKR {((summary.total_net_worth || 0) * 0.025).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                    </span>
-                                </div>
-
-                                <div className="pt-4 mt-2 border-t border-[var(--color-white-10)] flex justify-between items-center">
-                                    <span className="font-bold text-text-secondary">Post-Zakat Net Worth</span>
-                                    {(() => {
-                                        const zakat = (summary.total_net_worth || 0) * 0.025;
-                                        const finalAmount = (summary.total_net_worth || 0) - zakat;
-                                        return (
-                                            <span className="font-bold text-2xl text-success">
-                                                PKR {finalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                            </span>
-                                        );
-                                    })()}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                )}
+                {/* Shariah Zakat & Wealth Purification Terminal Modal */}
+                <IslamicZakatModal
+                    isOpen={isCalculatorModalOpen}
+                    onClose={() => setIsCalculatorModalOpen(false)}
+                    holdings={holdings}
+                    totalNetWorth={summary?.total_net_worth || 0}
+                />
 
                 {/* Fund Performance Modal Overlay */}
                 {isPerformanceModalOpen && selectedBank && (
