@@ -299,9 +299,11 @@ npm run electron:dev
 All detailed architecture whitepapers, presentation slide decks, and datasets are organized in the [`docs/`](./docs) directory:
 
 - 📄 **[Technical Whitepaper & System Documentation](docs/TECHNICAL_DOCUMENTATION.md)** — In-depth architectural analysis, math formulas, and engineering disclosures.
+- 📋 **[Project Overview Master Documentation](docs/PROJECT_OVERVIEW_MASTER.md)** ([PDF](docs/PROJECT_OVERVIEW_MASTER.pdf)) — Complete 12-problem breakdown and product specifications.
 - 🛡️ **[Production Audit & Feature Readiness Matrix](docs/PRODUCTION_AUDIT_AND_DISCLOSURE.md)** — Detailed production audit, failure modes, and post-hackathon commercialization roadmap.
 - 🖼️ **[System Architecture Diagram](docs/SYSTEM_ARCHITECTURE_DIAGRAM.png)** — High-resolution system topology diagram.
 - 🖼️ **[AI Pipeline & Privacy Flow](docs/AI_PIPELINE_AND_PRIVACY_FLOW.png)** — Visualizing zero-knowledge privacy flow and Alibaba Cloud Qwen 2.5 integration.
+- 🎨 **[Core Problems Infographic](docs/SLIDE3_CORE_PROBLEMS_VISUAL.jpg)** — High-resolution visual illustration of the 4 core problems in Pakistan retail investing.
 - 📊 **[Pakistan Mutual Fund NAV Dataset (CSV)](docs/PAKISTAN_MUTUAL_FUND_NAV_DATASET.csv)** — Dataset of 210+ mutual funds across Meezan, HBL, Atlas, and Faysal.
 - 📽️ **[Hackathon Presentation Slide Deck (PPTX)](docs/FundTracker_Advanced_Hackathon_Presentation.pptx)** — Official presentation deck for hackathon evaluation.
 - 🎙️ **[Pitch Script & Judges Q&A](docs/PITCH_SCRIPT_AND_JUDGES_QA.md)** — Comprehensive presentation script and anticipated technical Q&A.
