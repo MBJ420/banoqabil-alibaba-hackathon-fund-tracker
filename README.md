@@ -1,432 +1,321 @@
-# 🏦 Pakistan Fund Tracker
-### BanoQabil × Alibaba Cloud Hackathon
+# 🏦 FundTracker Advanced
+### BanoQabil × Alibaba Cloud AI Hackathon — Financial Inclusion Track
+**Project Code:** P01090 | **Team Name:** Fund Tracker | **Lead Developer:** Muhammad Bin Jamil  
+**Repository:** [github.com/MBJ420/banoqabil-alibaba-hackathon-fund-tracker](https://github.com/MBJ420/banoqabil-alibaba-hackathon-fund-tracker)
 
-> An AI-powered desktop application that automatically tracks Pakistani mutual fund investments, scrapes live NAV prices from MUFAP, and delivers intelligent financial insights — built for Meezan, HBL, Atlas, and Faysal fund investors.
+[![FastAPI](https://img.shields.io/badge/Backend-FastAPI-009688?style=flat&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![React](https://img.shields.io/badge/Frontend-React%2018%20%2B%20TypeScript-61DAFB?style=flat&logo=react&logoColor=black)](https://react.dev/)
+[![TailwindCSS](https://img.shields.io/badge/Styling-Tailwind%20CSS-38B2AC?style=flat&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
+[![Electron](https://img.shields.io/badge/Desktop-Electron-47848F?style=flat&logo=electron&logoColor=white)](https://www.electronjs.org/)
+[![Alibaba Cloud](https://img.shields.io/badge/AI-Alibaba%20Cloud%20Qwen%202.5-FF6A00?style=flat&logo=alibabacloud&logoColor=white)](https://www.alibabacloud.com/)
+[![SQLite](https://img.shields.io/badge/Database-SQLite%20(WAL)-003B57?style=flat&logo=sqlite&logoColor=white)](https://www.sqlite.org/)
+
+> **FundTracker Advanced** is an intelligent, local-first mutual fund portfolio tracker, macroeconomic advisory platform, and Shariah wealth terminal engineered specifically for Pakistani retail investors. It consolidates fragmented investments across **Al Meezan Investment Management, HBL Asset Management, Atlas Asset Management, and Faysal Funds** into a unified, privacy-guaranteed desktop application.
 
 ---
 
 ## 📌 Table of Contents
-1. [What This App Does](#-what-this-app-does)
-2. [Tech Stack — Plain English](#-tech-stack--plain-english)
-3. [Project Structure](#-project-structure)
-4. [How The App Works Under The Hood](#-how-the-app-works-under-the-hood)
-5. [Database Tables](#-database-tables)
-6. [API Endpoints](#-api-endpoints-what-the-backend-exposes)
-7. [Setup and Running Locally](#-setup--running-locally)
-8. [GitHub Collaboration Guide](#-github-collaboration-guide-for-the-team)
+1. [Core Mission & Problem Statement](#-core-mission--problem-statement)
+2. [Key Features & Innovations](#-key-features--innovations)
+3. [Alibaba Cloud Model Studio Integration](#-alibaba-cloud-model-studio-integration)
+4. [System Architecture](#-system-architecture)
+5. [Tech Stack](#-tech-stack)
+6. [Database Schema & Architecture](#-database-schema--architecture)
+7. [API Endpoints](#-api-endpoints)
+8. [Setup & Running Locally](#-setup--running-locally)
+9. [Documentation & Deliverables Index](#-documentation--deliverables-index)
+10. [Compliance & Disclaimers](#-compliance--disclaimers)
 
 ---
 
-## 🚀 What This App Does
+## 🎯 Core Mission & Problem Statement
 
-This is a **local desktop app** (runs on your own PC — no cloud needed) that:
+Less than **0.5% of Pakistan's population** invests in mutual funds or the capital market. Retail investors face acute structural challenges:
 
-- 📄 **Auto-reads your PDF bank statements** — drop a statement PDF into a folder, and the app automatically extracts all your fund holdings
-- 💹 **Scrapes live NAV prices daily from [MUFAP](https://mufap.com.pk)** — so your portfolio always shows today's value
-- 🤖 **Uses Google Gemini AI** to parse complex Fund Manager Reports (FMRs) and extract fund metadata (risk level, asset allocation, fund type)
-- 📊 **Shows a rich dashboard** — total net worth, gain/loss, historical charts, fund performance tables
-- 📰 **Aggregates financial news** and uses AI to predict how world events might impact your funds
-- 🔐 **Multi-user login** — each user only sees their own portfolios
+1. **Fragmented Portfolios Without P&L:** Investors with accounts across multiple Asset Management Companies (AMCs) receive incompatible monthly PDF statements. Major AMCs (such as HBL) report current balances but omit net gain/loss, making true ROI invisible.
+2. **Absence of Open Financial APIs:** Unlike Western markets, Pakistan lacks open banking APIs or public PSX/MUFAP endpoints for retail consumers to pull automated NAV feeds.
+3. **Complex Shariah Zakat Obligations:** Over 70% of Pakistani retail investors seek Islamic funds, but calculating Zakat on equities and balanced funds requires complex working-capital balance sheet deductions that standard calculators fail to address.
+4. **Punitive Tax Regulations & Missed Rebates:** Under the Finance Act 2024, non-filers face a punitive 30% CGT rate (vs. 15% for filers). Furthermore, retail investors routinely miss out on Section 63 Voluntary Pension Scheme (VPS) tax rebates worth up to 20% of taxable income.
+5. **The "Money Illusion" & Inflation:** With double-digit inflation (12%–29% CPI historically), investors mistake nominal paper gains for real wealth creation.
+6. **Financial Jargon & Language Barriers:** Complex financial terminology and English-only interfaces alienate millions of potential Pakistani retail investors.
 
-**Target Users:** Pakistani investors holding units in Meezan, HBL, Atlas, and Faysal mutual funds.
-
----
-
-## 🧰 Tech Stack — Plain English
-
-> No jargon. Here is what each tool actually does in this project:
-
-| Tool | What it is | Why we use it |
-|------|-----------|--------------|
-| **FastAPI** (Python) | The "brain" of the backend. Handles all requests from the frontend. | Fast, modern, auto-generates API docs |
-| **SQLAlchemy** | A Python library that lets us talk to the database using Python code instead of raw SQL | Cleaner code, easier to change database structure |
-| **SQLite** | A simple file-based database (`fundtracker.db`). Think of it like a spreadsheet that code can read/write. | No server needed, works offline |
-| **Alembic** | A tool that manages database changes ("migrations") — like version control for your database schema | Team members can update their DB structure safely |
-| **Playwright** | A browser automation tool — it opens a real browser in the background to scrape MUFAP's website | MUFAP requires JavaScript, so a normal HTTP request does not work |
-| **Watchdog** | A library that watches a folder for new files | Lets us auto-detect when a new PDF is dropped into the data folder |
-| **APScheduler** | Runs tasks on a schedule (like a cron job) | Triggers the MUFAP scraper every day at 6 PM PKT |
-| **pdfplumber** | Extracts text from PDF files | Reads bank statement PDFs |
-| **Google Gemini API** | Google AI model | Parses complex FMR PDFs that have inconsistent formatting |
-| **React + TypeScript** | The frontend UI framework | Builds the interactive dashboard |
-| **Vite** | A build tool that makes frontend development fast | Handles hot-reload during development |
-| **Electron** | Wraps the React web app into a desktop exe | So users do not need a browser — it looks like a native app |
-| **Tailwind CSS** | A CSS utility framework | Lets us style the UI quickly without writing custom CSS files |
-| **ApexCharts** | A charting library | Draws the interactive line/area charts on the dashboard |
-| **Framer Motion** | Animation library for React | Smooth transitions and micro-animations |
-| **Axios** | HTTP client for the frontend | Makes API calls from the React app to the FastAPI backend |
+**FundTracker Advanced** solves all six problems in a single, offline-resilient, privacy-first desktop application.
 
 ---
 
-## 📁 Project Structure
+## 🚀 Key Features & Innovations
+
+### 1. 📄 Multi-AMC Bank PDF Statement Auto-Ingestion
+- Parses native digital PDF statements from **Al Meezan Investment Management, HBL Asset Management, Atlas Asset Management, and Faysal Funds** using `pdfplumber` and robust regex extractors.
+- Reconciles acquisition costs, calculates historical FIFO gain/loss, and handles encrypted statements (Atlas password configs).
+- Drop statements directly into `Fund Tracker PDF Data/{username}/{bank}/` for instant background ingestion via `watchdog`, or upload via the GUI.
+
+### 2. 🕷️ Automated Headless MUFAP NAV Scraper (210+ Funds)
+- Automated Playwright headless Chromium scraper scraping `mufap.com.pk` daily at 6:00 PM PKT.
+- Dynamically discovers and auto-registers newly launched mutual funds on each scrape.
+- Captures daily closing NAVs and trailing performance returns (1M, 6M, 1Y, YTD) across conventional and Islamic asset classes.
+- Includes manual one-click scraper execution with live status and health tracking from the GUI.
+
+### 3. 🌙 Shariah Zakat & Wealth Purification Terminal
+- Compliant with **AAOIFI Shariah Standard No. 35** and OIC Islamic Fiqh Academy guidelines.
+- **Editable Gold & Silver Nisab:** Real-time editable Nisab thresholds (87.48g gold / 612.36g silver) reflecting live Pakistani bullion market rates.
+- **Prudent Equity Working Capital Ceiling (*Ihtiyat*):** Deducts illiquid fixed assets (*Amwal al-Qunyah*) and sets an intentional 28% ceiling on equity holdings to ensure religious obligations are fully fulfilled without underpaying.
+- **Balanced Fund Rule:** Applies a 70% liquid cash / 30% equity allocation model for balanced/asset-allocation funds.
+- **Section 60 Tax Exemption Certificate:** Generates formal zakat deduction statements eligible for tax credit under Section 60 of the Income Tax Ordinance 2001.
+- Complete scholarly fiqh documentation and sources cited within the terminal.
+
+### 4. 💼 Capital Gains & VPS Pension Tax Optimizer
+- Fully updated for **Pakistan Finance Act 2024** regulations and FBR Section 37A capital gains tax tiers (15% Filer, 30% Non-Filer).
+- **Section 63 VPS 20% Rebate Advisor:** 2-step decision flow with monthly salary sync that calculates exact annual tax savings (up to 20% of taxable income) and models a 50% tax-free lump-sum at retirement.
+- Tax-loss harvesting guidance allowing offsetting of capital losses within same asset categories.
+
+### 5. 📉 Inflation Hedge & Goal-Based SIP Annuity Simulator
+- Uses historical State Bank of Pakistan (SBP) CPI data and Fisher's real rate of return equation:
+  $$\text{Real Purchasing Power} = \frac{\text{Nominal Future Value}}{(1 + \text{CPI Inflation})^t}$$
+- Simulates compound growth across customizable monthly SIP contributions and demonstrates real purchasing power versus PKR cash depreciation.
+
+### 6. 📈 Benchmark Alpha & Active Fee Drag Analyzer
+- Calculates Jensen's Gross and Net Alpha against the **KSE-100** and **KMI-30** benchmark indices:
+  $$\text{Net Alpha} = (\text{Fund Return} - \text{Benchmark Return}) - \text{Total Expense Ratio}$$
+- Analyzes Total Expense Ratio (TER) fee drag to categorize mutual funds into *Great Value*, *Fair Value*, or *Overpriced*.
+- **Cross-AMC Peer Outperformer Engine:** Identifies higher-yielding funds in the same category across different fund managers, strictly distinguishing conventional from pension funds.
+
+### 7. 📑 Portfolio Data Manager & Audit Ledger
+- Interactive Statement History Ledger with full statement audit trails.
+- Add manual monthly investment entries for non-statement holdings.
+- Delete or rollback erroneous uploads with safety confirmation modals.
+
+### 8. 🇵🇰 Bilingual Interface (English ↔ Roman Urdu)
+- Instant 1-click toggle between English and conversational Roman Urdu throughout the entire application.
+- Translates technical financial metrics into relatable terminology (`"Kul Nafa / Nuqsan"`, `"Mehngai Simulator"`, `"Maliyati Intelligence"`).
+
+### 9. 🛡️ Privacy-First Zero-Knowledge Architecture
+- All user data, statements, holdings, and database records remain strictly local on the user's PC.
+- No personal balances or account identifiers are ever transmitted to the cloud.
+
+---
+
+## 🤖 Alibaba Cloud Model Studio Integration
+
+All artificial intelligence workloads in FundTracker Advanced are powered by **Alibaba Cloud Model Studio** via DashScope API bindings (`https://dashscope-intl.aliyuncs.com/compatible-mode/v1`) using the **Qwen 2.5** LLM series:
 
 ```
-Fund Tracker Advanced/
-│
-├── backend/                          ← Python FastAPI server
-│   ├── app/
-│   │   ├── main.py                   ← App entry point. Starts background services.
-│   │   ├── models.py                 ← Database table definitions (SQLAlchemy ORM)
-│   │   ├── database.py               ← Database connection setup
-│   │   ├── schemas.py                ← Data validation shapes (Pydantic)
-│   │   ├── crud.py                   ← Reusable database read/write functions
-│   │   ├── utils.py                  ← Helper utilities (token creation, etc.)
-│   │   ├── routers/                  ← API route handlers (grouped by feature)
-│   │   │   ├── auth.py               ← Login / token generation
-│   │   │   ├── users.py              ← User registration and settings
-│   │   │   ├── dashboard.py          ← Main dashboard data (net worth, charts, etc.)
-│   │   │   ├── performance.py        ← Fund performance tables and NAV charts
-│   │   │   └── news.py               ← Financial news and AI predictions
-│   │   └── services/                 ← Background services (the "workers")
-│   │       ├── watcher.py            ← Watches data folder for new PDFs
-│   │       ├── scraper.py            ← Daily MUFAP NAV scraper (uses Playwright)
-│   │       ├── pdf_parser.py         ← Parses bank statement PDFs
-│   │       ├── fmr_parser.py         ← Parses Fund Manager Report PDFs using Gemini AI
-│   │       ├── news_service.py       ← Fetches and aggregates financial news
-│   │       └── news_ai_analyzer.py   ← AI analysis of news impact on assets
-│   ├── alembic/                      ← Database migration files
-│   ├── alembic.ini                   ← Alembic configuration
-│   ├── requirements.txt              ← Python package list (pip install -r this)
-│   └── .env.example                  ← Template for your secret keys — copy to .env
-│
-├── frontend/                         ← React + Electron desktop app
-│   ├── src/
-│   │   ├── main.tsx                  ← React entry point
-│   │   ├── App.tsx                   ← Route definitions (Login to Dashboard)
-│   │   ├── api/
-│   │   │   └── client.ts             ← Axios setup (base URL, auth headers)
-│   │   └── pages/
-│   │       ├── Login.tsx             ← Login screen
-│   │       ├── Register.tsx          ← Registration screen
-│   │       ├── Dashboard.tsx         ← Main dashboard (charts, holdings, performance)
-│   │       ├── News.tsx              ← Financial news feed
-│   │       ├── AINews.tsx            ← AI-analyzed news and asset predictions
-│   │       └── PortfolioSuggestions.tsx  ← AI portfolio recommendations
-│   ├── electron/                     ← Electron desktop wrapper files
-│   ├── package.json                  ← Node.js package list (npm install reads this)
-│   └── vite.config.ts                ← Vite build configuration
-│
-├── Fund Tracker PDF Data/            ← [AUTO-CREATED] Drop your PDFs here — never commit this folder
-│   ├── FMRs/                         ← Drop Fund Manager Report PDFs here (auto-deleted after AI parsing)
-│   └── {your-username}/              ← Auto-created when you register — named after your login username
-│       ├── meezan/                   ← Drop Meezan statement PDFs here
-│       ├── hbl/                      ← Drop HBL statement PDFs here
-│       ├── atlas/                    ← Drop Atlas statement PDFs here
-│       └── faysal/                   ← Drop Faysal statement PDFs here
-│
-├── backend/app/config.py             ← Central path config — all folder paths defined here
-├── start_app.bat                     ← One-click launcher for Windows (runs everything)
-├── stop_app.bat                      ← Stops all running services
-└── .gitignore                        ← Files Git should NOT track (DB, secrets, PDFs, etc.)
+┌────────────────────────────────────────────────────────────────────────┐
+│               ALIBABA CLOUD MODEL STUDIO (QWEN 2.5)                   │
+├──────────────────────────────────┬─────────────────────────────────────┤
+│ 📰 Two-Pass Macro News Engine    │ 📊 Zero-Knowledge Diagnostics       │
+│ • Pass 1: World Context Memory   │ • Evaluates anonymized allocations  │
+│ • Pass 2: Sector Impact Scoring  │ • Macro-aware rebalancing advice    │
+│ • Predicts Equity/Debt/Gold      │ • Bilingual (English & Roman Urdu)  │
+├──────────────────────────────────┼─────────────────────────────────────┤
+│ 📄 PyMuPDF + Qwen FMR Parser     │ 🔄 Resilient Client Bindings        │
+│ • Parses messy AMC reports       │ • OpenAI-compatible SDK client      │
+│ • Extracts risk & allocations    │ • Exponential backoff & timeout     │
+└──────────────────────────────────┴─────────────────────────────────────┘
+```
+
+1. **Two-Pass Macroeconomic News Sentiment Engine:** Ingests live RSS feeds from *Dawn Business* and *Business Recorder*. Pass 1 maintains persistent institutional memory of macroeconomic events (`KEEP`, `AMEND`, `RESOLVE`, `ADD`). Pass 2 forecasts sector impact direction (`Bullish`, `Bearish`, `Neutral`) and impact scores (0–10) across Short, Medium, and Long horizons for PSX Equities, Money Market, Fixed Income, and Gold.
+2. **PyMuPDF + Qwen FMR Parser:** Extracts fund manager commentary, risk levels, and asset allocation percentages from complex monthly Fund Manager Reports.
+3. **Zero-Knowledge Portfolio Health Diagnostics:** Diagnoses asset allocation drift and provides macro-aware rebalancing recommendations without ever sending user account balances or personal identifiers to external servers.
+
+---
+
+## 🏗 System Architecture
+
+```
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│                             LOCAL DESKTOP CLIENT (ELECTRON)                            │
+│                                                                                        │
+│   • React 18 + TypeScript + Vite + Tailwind CSS + ApexCharts Interactive Visuals       │
+│   • Bilingual State Engine: English ↔ Roman Urdu (LanguageContext)                     │
+│   • Shariah Zakat & Nisab Terminal & Portfolio Data Manager                            │
+└───────────────────────────────────────────┬────────────────────────────────────────────┘
+                                            │ HTTP REST (Port 8001) / IPC
+                                            ▼
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│                                 FASTAPI BACKEND RUNTIME                                │
+│                                                                                        │
+│   ├── Automated Watchdog Ingestion (Watches "Fund Tracker PDF Data/" subdirectories)   │
+│   ├── Multi-AMC Statement Parsing Engine (Meezan, HBL, Atlas, Faysal regex extractors) │
+│   ├── Profit & Loss (P&L) Ledger & Acquisition Cost Reconciler                         │
+│   ├── AAOIFI Standard No. 35 Shariah Zakat & Nisab Computation Engine                  │
+│   ├── Finance Act 2024 Tax Optimizer & Section 63 VPS 20% Rebate Advisor               │
+│   ├── SBP CPI Inflation Purchasing Power & Goal-Based SIP Annuity Engine               │
+│   ├── Jensen's Gross/Net Alpha Engine & Active Fee Drag Analyzer                       │
+│   └── Cross-AMC Outperformer Quartile Discovery Engine                                 │
+└───────────────┬───────────────────────────┬────────────────────────────┬───────────────┘
+                │                           │                            │
+                ▼                           ▼                            ▼
+┌───────────────────────────────┐ ┌──────────────────────────┐ ┌─────────────────────────┐
+│       EMBEDDED SQLITE         │ │    HEADLESS PLAYWRIGHT   │ │   ALIBABA CLOUD MODEL   │
+│         IN WAL MODE           │ │      SCRAPER ENGINE      │ │     STUDIO (QWEN 2.5)   │
+│                               │ │                          │ │                         │
+│ • PRAGMA journal_mode=WAL     │ │ • Headless Chromium      │ │ • DashScope API Client  │
+│ • Zero read locking           │ │ • mufap.com.pk scraping  │ │ • PyMuPDF FMR Parser    │
+│ • 210+ Verified Mutual Funds  │ │ • Cloudflare bypass      │ │ • Two-Pass Macro Engine │
+│ • 1,770+ NAV History Records  │ │ • Daily 6:00 PM PKT cron │ │ • FundTracker AI Intel  │
+│ • 18 Statement Audit Records  │ │ • 210+ NAVs & Returns    │ │ • Bilingual Roman Urdu  │
+└───────────────────────────────┘ └──────────────────────────┘ └─────────────────────────┘
 ```
 
 ---
 
-## 🔧 How The App Works Under The Hood
+## 🧰 Tech Stack
 
-### The Big Picture
-
-```
-+-------------------------------------------------------------+
-|                     USER'S COMPUTER                         |
-|                                                             |
-|  +--------------+    HTTP     +--------------------------+  |
-|  |   Electron   | <-------->  |   FastAPI Backend        |  |
-|  |   (Desktop   |  localhost  |   (Python, port 8001)   |  |
-|  |    Window)   |  :8001      |                          |  |
-|  |              |             |  +---------------------+ |  |
-|  |  React App   |             |  |   SQLite Database   | |  |
-|  |  (Dashboard) |             |  |   (fundtracker.db)  | |  |
-|  +--------------+             |  +---------------------+ |  |
-|                               |                          |  |
-|                               |  Background Workers:     |  |
-|                               |  - Watcher (PDF folder)  |  |
-|                               |  - Scraper (MUFAP daily) |  |
-|                               |  - News pipeline (6hrs)  |  |
-|                               +--------------------------+  |
-|                                         |                   |
-|                                    +----+----+              |
-|                                    | Internet|              |
-|                                    | MUFAP   |              |
-|                                    | Gemini  |              |
-|                                    +---------+              |
-+-------------------------------------------------------------+
-```
-
-### Step-by-Step Flow
-
-1. **User starts the app** via `start_app.bat`
-   - This opens two things: the Python backend server, and the Electron window (which loads the React UI)
-
-2. **User logs in** — the frontend sends credentials to `POST /token`, gets back a token (like a session ID) that it includes in all future requests
-
-3. **PDF Drop Auto-Ingestion** — a background thread (`watcher.py`) constantly monitors the `Fund Tracker PDF Data/` folder (inside the project):
-   - Drop a file into `Fund Tracker PDF Data/FMRs/` → AI parses it as a Fund Manager Report, extracts metadata
-   - Drop a file into `Fund Tracker PDF Data/jameel/meezan/` → system parses it as a personal bank statement and records your holdings
-
-4. **Daily NAV Scraping** — every day at 6:00 PM PKT, the scraper automatically opens MUFAP in a hidden browser (Playwright), extracts NAV prices for all known funds, and saves them to the database
-
-5. **Dashboard loads** — the React frontend calls several API endpoints, combines the data, and renders charts, tables, and insights
+| Component | Technology | Purpose |
+| :--- | :--- | :--- |
+| **Backend Runtime** | Python 3.11+ / FastAPI | High-performance asynchronous REST API |
+| **Database** | SQLite 3 (WAL mode) | Embedded, zero-configuration local storage with concurrent reads |
+| **ORM & Migrations**| SQLAlchemy & Alembic | Schema modeling and version-controlled migrations |
+| **Web Scraping** | Playwright (Headless Chromium) | Automated daily NAV scraping from MUFAP with Cloudflare bypass |
+| **PDF Extraction** | `pdfplumber` & `PyMuPDF (fitz)` | Multi-AMC bank statement text extraction |
+| **AI / Cloud LLM** | Alibaba Cloud Model Studio (Qwen 2.5) | Macro sentiment reasoning, FMR parsing, and portfolio diagnostics |
+| **Desktop Wrapper** | Electron | Native Windows desktop packaging |
+| **Frontend UI** | React 18 + TypeScript + Vite | Reactive single-page application |
+| **Styling** | Tailwind CSS | Modern, responsive dark-themed user interface |
+| **Data Viz** | ApexCharts | Interactive time-series NAV, asset allocation, and alpha charts |
+| **Animations** | Framer Motion | Smooth UI transitions and interactive cards |
 
 ---
 
-## 🗄 Database Tables
+## 🗄 Database Schema & Architecture
 
-> Think of each table as a spreadsheet tab in a big Excel file
+The embedded SQLite database operates with **Write-Ahead Logging (`PRAGMA journal_mode=WAL;`)**, `PRAGMA synchronous=NORMAL;`, and `PRAGMA busy_timeout=5000;`, enabling concurrent reads from the Electron client during active background scraper writes.
 
-| Table | What it stores |
-|-------|---------------|
-| `users` | Login accounts (username + hashed password) |
-| `banks` | List of fund houses: Meezan, HBL, Atlas, Faysal |
-| `funds` | Every mutual fund we know about. Also stores AI-extracted risk and allocation info |
-| `portfolios` | Links a user to a bank (e.g., "Jameel has a portfolio at Meezan") |
-| `statements` | Raw parsed data from PDF statements — holdings, values, dates |
-| `fund_nav_history` | Daily NAV price per fund (used to draw price charts) |
-| `fund_performance_metrics` | Benchmark returns (1M, 6M, 1Y, YTD) scraped from MUFAP |
-| `user_bank_configs` | Per-user settings — e.g., PDF password for encrypted Atlas statements |
-| `news_articles` | Cached financial news articles (refreshed every 6 hours) |
-| `asset_predictions` | AI-generated impact scores per asset class based on latest news |
-| `world_context_entries` | Persistent macro/geopolitical events the AI keeps in memory |
-| `news_metadata` | Tracks when news/AI last ran and whether it succeeded |
-| `scraper_status` | Health status of the MUFAP scraper |
-
----
-
-## 🌐 API Endpoints (What the Backend Exposes)
-
-> When the backend is running, visit **http://localhost:8001/docs** to see all endpoints with an interactive UI (auto-generated by FastAPI).
-
-### Authentication
-| Method | URL | What it does |
-|--------|-----|-------------|
-| `POST` | `/token` | Login — returns a bearer token |
-| `POST` | `/users/register` | Create a new user account |
-
-### Dashboard
-| Method | URL | What it does |
-|--------|-----|-------------|
-| `GET` | `/dashboard/summary` | Net worth, total invested, total gain/loss |
-| `GET` | `/dashboard/holdings` | List of all your current fund holdings |
-| `GET` | `/dashboard/performance` | Historical portfolio value (for the line chart) |
-| `GET` | `/dashboard/allocation` | Asset category breakdown (for the pie chart) |
-| `GET` | `/dashboard/insights` | AI-generated risk alerts and tips |
-
-### Fund Performance
-| Method | URL | What it does |
-|--------|-----|-------------|
-| `GET` | `/api/performance/bank/{name}` | All funds for a specific bank with their metrics |
-| `GET` | `/api/performance/{id}/chart` | Full NAV history for one specific fund |
-| `POST`| `/api/performance/upload-fmr` | Manually upload an FMR PDF to update fund metadata |
-
-### News and AI
-| Method | URL | What it does |
-|--------|-----|-------------|
-| `GET` | `/news/articles` | Latest financial news articles |
-| `GET` | `/news/predictions` | AI predictions on how news affects each asset class |
+| Table | Description |
+| :--- | :--- |
+| `users` | Local accounts (username + argon2/bcrypt hashed password) |
+| `banks` | Verified fund houses: Meezan, HBL, Atlas, Faysal |
+| `funds` | 210+ mutual funds with category, risk level, and expense ratios |
+| `portfolios` | Links user accounts to AMC portfolio holdings |
+| `statements` | Parsed statement ledger records, units, acquisition cost, and P&L |
+| `fund_nav_history` | Historical daily NAV closing prices for interactive charting |
+| `fund_performance_metrics` | Trailing return benchmarks (1M, 6M, 1Y, YTD) scraped from MUFAP |
+| `user_bank_configs` | Per-user credentials & passwords for encrypted PDF statements |
+| `news_articles` | Cached Dawn Business & Business Recorder macroeconomic news |
+| `asset_predictions` | Qwen 2.5 multi-horizon impact scores across asset categories |
+| `world_context_entries` | Persistent macro context memory maintained by Qwen 2.5 |
+| `scraper_status` | Operational health and execution audit log of the MUFAP scraper |
 
 ---
 
-## 🛠 Setup and Running Locally
+## 🌐 API Endpoints
+
+Explore the interactive Swagger documentation when running the backend at **`http://localhost:8001/docs`**.
+
+### Core Routes:
+- `POST /token` — Authenticates user and returns JWT bearer token.
+- `POST /users/register` — Registers a new local user account.
+- `GET /dashboard/summary` — Net worth, total invested, cumulative gain/loss, and portfolio asset breakdown.
+- `GET /dashboard/holdings` — Active mutual fund holdings with live NAV values and returns.
+- `GET /dashboard/performance` — Historical portfolio value series for charting.
+- `POST /statements/upload` — Upload and parse bank statement PDF.
+- `GET /statements/history` — Fetch statement audit history ledger.
+- `DELETE /statements/{id}` — Roll back a previously parsed statement.
+- `POST /statements/manual` — Add manual monthly investment entry.
+- `GET /api/performance/bank/{name}` — Category-wise fund metrics and NAVs for a given AMC.
+- `GET /api/performance/{id}/chart` — Full historical daily NAV curve for a specific fund.
+- `GET /news/articles` — Scraped macroeconomic news articles.
+- `GET /news/predictions` — Qwen 2.5 macroeconomic sector impact forecasts.
+- `POST /api/scraper/trigger` — Trigger on-demand MUFAP NAV scrape.
+- `GET /api/scraper/status` — Live status of the MUFAP scraper.
+
+---
+
+## 🛠 Setup & Running Locally
 
 ### Prerequisites
+1. **Python 3.11+** — [python.org](https://www.python.org/downloads/) *(Ensure "Add Python to PATH" is checked)*
+2. **Node.js 20+** — [nodejs.org](https://nodejs.org/)
+3. **Git** — [git-scm.com](https://git-scm.com/)
+4. **Alibaba Cloud DashScope API Key** — [dashscope.console.aliyun.com](https://dashscope.console.aliyun.com/) *(Optional: Google Gemini key supported as fallback)*
 
-Before you start, you need these installed on your PC:
+---
 
-1. **Python 3.11+** — [Download here](https://www.python.org/downloads/) *(Check "Add to PATH" during install!)*
-2. **Node.js 20+** — [Download here](https://nodejs.org/)
-3. **Git** — [Download here](https://git-scm.com/)
-4. **A Google Gemini API Key** (free) — [Get one here](https://aistudio.google.com/apikey)
+### Step-by-Step Installation
 
-### First-Time Setup
-
-#### Step 1 — Clone the repository
+#### 1. Clone the Repository
 ```bash
-git clone https://github.com/YOUR_TEAM/fund-tracker.git
-cd fund-tracker
+git clone https://github.com/MBJ420/banoqabil-alibaba-hackathon-fund-tracker.git
+cd "Fund Tracker Advanced"
 ```
 
-#### Step 2 — Set up the Backend (Python)
+#### 2. Backend Setup
 ```bash
-# Go into the backend folder
 cd backend
 
-# Create an isolated Python environment
+# Create and activate Python virtual environment
 python -m venv venv
+venv\Scripts\activate       # On Linux/macOS: source venv/bin/activate
 
-# Activate the virtual environment (Windows)
-venv\Scripts\activate
-
-# Install all required Python packages
+# Install dependencies
 pip install -r requirements.txt
 
-# Install Playwright's browser (needed for the MUFAP scraper — run this once only)
+# Install Playwright browser binary (needed for MUFAP scraper)
 playwright install chromium
+
+# Set up environment variables
+copy .env.example .env     # On Linux/macOS: cp .env.example .env
+```
+Open `backend/.env` in any text editor and add your Alibaba Cloud DashScope API key:
+```env
+DASHSCOPE_API_KEY=your_dashscope_api_key_here
+DASHSCOPE_MODEL=qwen-plus
 ```
 
-#### Step 3 — Configure your Secret Keys
+#### 3. Frontend Setup
 ```bash
-# Copy the example env file
-copy backend\.env.example backend\.env
-
-# Open backend\.env in any text editor and paste your real Gemini API key
-# GEMINI_API_KEY=AIzaSy...your_real_key_here
-```
-
-#### Step 4 — Set up the Frontend (Node.js)
-```bash
-# Go to the frontend folder (in a new terminal)
+# In a new terminal window
 cd frontend
-
-# Install all Node.js packages
 npm install
 ```
 
-### Running the App
+---
 
-**Option A — One-click (recommended for Windows):**
-```
+### Running the Application
+
+**Option A: Windows 1-Click Launcher (Recommended)**
+```cmd
 Double-click start_app.bat
 ```
-This starts the backend and opens the Electron desktop window automatically.
+This automatically boots the FastAPI backend and launches the Electron desktop application window. To stop the application, run `stop_app.bat`.
 
-**Option B — Manual (for development/debugging):**
+**Option B: Manual Terminal Launch**
 ```bash
-# Terminal 1 — Start the backend
+# Terminal 1 — Start Backend Server
 cd backend
 venv\Scripts\activate
 uvicorn app.main:app --reload --port 8001
 
-# Terminal 2 — Start the frontend
+# Terminal 2 — Start Desktop Electron Client
 cd frontend
 npm run electron:dev
 ```
 
-> 💡 **Tip:** After the backend starts, open `http://localhost:8001/docs` in your browser to see and test all API endpoints interactively — extremely useful when building new features!
+---
+
+## 📚 Documentation & Deliverables Index
+
+All detailed architecture whitepapers, presentation slide decks, and datasets are organized in the [`docs/`](./docs) directory:
+
+- 📄 **[Technical Whitepaper & System Documentation](docs/TECHNICAL_DOCUMENTATION.md)** — In-depth architectural analysis, math formulas, and engineering disclosures.
+- 🛡️ **[Production Audit & Feature Readiness Matrix](docs/PRODUCTION_AUDIT_AND_DISCLOSURE.md)** — Detailed production audit, failure modes, and post-hackathon commercialization roadmap.
+- 🖼️ **[System Architecture Diagram](docs/SYSTEM_ARCHITECTURE_DIAGRAM.png)** — High-resolution system topology diagram.
+- 🖼️ **[AI Pipeline & Privacy Flow](docs/AI_PIPELINE_AND_PRIVACY_FLOW.png)** — Visualizing zero-knowledge privacy flow and Alibaba Cloud Qwen 2.5 integration.
+- 📊 **[Pakistan Mutual Fund NAV Dataset (CSV)](docs/PAKISTAN_MUTUAL_FUND_NAV_DATASET.csv)** — Dataset of 210+ mutual funds across Meezan, HBL, Atlas, and Faysal.
+- 📽️ **[Hackathon Presentation Slide Deck (PPTX)](docs/FundTracker_Advanced_Hackathon_Presentation.pptx)** — Official presentation deck for hackathon evaluation.
+- 🎙️ **[Pitch Script & Judges Q&A](docs/PITCH_SCRIPT_AND_JUDGES_QA.md)** — Comprehensive presentation script and anticipated technical Q&A.
+- 🎬 **[Demo Video Walkthrough Script](docs/DEMO_VIDEO_WALKTHROUGH_SCRIPT.md)** — Complete step-by-step narration script for live video demonstration.
 
 ---
 
-## 🤝 GitHub Collaboration Guide (For The Team)
+## ⚖️ Compliance & Disclaimers
 
-> This section explains how 3 people can work on this project at the same time without overwriting each other's work.
-
-### The Core Concept: Branches
-
-Think of Git branches like **parallel versions** of the project. The `main` branch is the "official" stable version. Each person creates their own branch to work on a feature, then merges it back into `main` when done.
-
-```
-main  ──────────────────────────────────────  (always stable, never break this)
-         |               |               |
-         v               v               v
-   feature/          feature/        feature/
-   jameel-news      ali-charts      sara-auth
-   (your work)    (Ali's work)    (Sara's work)
-```
-
-### Daily Workflow — Follow This Every Day
-
-```bash
-# 1. Get the latest changes from teammates before you start
-git checkout main
-git pull origin main
-
-# 2. Switch to your own feature branch (create it if first time)
-git checkout -b feature/what-im-building     # creates new branch
-# OR just switch to existing:
-git checkout feature/what-im-building
-
-# 3. Do your work — write code, test it
-
-# 4. Save a snapshot of your progress
-git add .
-git commit -m "feat: added CSV export button on dashboard"
-
-# 5. Push to GitHub so teammates can see your progress
-git push origin feature/what-im-building
-
-# 6. When the feature is complete, open a Pull Request on GitHub to merge into main
-```
-
-### Branch Naming — Keep It Clear
-
-```
-feature/ai-portfolio-suggestions   ← new feature
-fix/pdf-parsing-atlas-bug          ← bug fix
-ui/redesign-dashboard-cards        ← visual changes only
-docs/update-readme                 ← documentation only
-```
-
-### Commit Messages — Write What You Did
-
-```
-feat: add Zakat calculator to dashboard
-fix: MUFAP scraper now correctly handles pension fund NAVs
-ui: improve chart colors for dark mode
-docs: add setup steps for Mac users
-```
-
-### How To Avoid Merge Conflicts
-
-A **merge conflict** happens when two people edit the exact same line in the same file. To avoid this:
-
-1. **Split ownership of files** — if MBJ owns `Dashboard.tsx`, Ahmed should not touch it. Ahmed works on `News.tsx`, Aaisha works on `AINews.tsx`.
-2. **Pull from main every morning** — `git pull origin main` — stay in sync
-3. **Commit small and often** — 5 small commits are much safer than 1 huge commit
-
-### If You Get a Merge Conflict
-
-Your IDE (VS Code / Antigravity / Claude Code) will highlight the conflict like this:
-
-```
-<<<<<<< HEAD
-your version of the code
-=======
-teammate's version of the code
->>>>>>> feature/their-branch
-```
-
-Just keep the version you want (or combine both), delete those `<<<`, `===`, `>>>` markers, then:
-
-```bash
-git add .
-git commit -m "fix: resolve merge conflict in Dashboard.tsx"
-```
-
-### Suggested Work Division
-
-| Person | Ownership Area |
-|--------|---------------|
-| **Person 1 (Backend)** | New API routes, PDF parsing improvements, AI prompt tuning |
-| **Person 2 (Frontend)** | New UI pages, chart upgrades, animations, design polish |
-| **Person 3 (Full-Stack)** | Features that need both backend and frontend (e.g., PDF export, new analytics) |
-
-> 💡 **AI IDE Tip:** When you ask Antigravity, Claude Code, or Qoder to build something, always tell it: *"I am on branch `feature/my-branch`. Only modify files in the [backend/frontend] folder."* This stops the AI from accidentally editing your teammate's files.
-
-### Creating a Pull Request (The Right Way to Merge)
-
-1. Push your branch: `git push origin feature/your-feature`
-2. Go to your GitHub repository
-3. GitHub will show a yellow banner saying "Compare and pull request" — click it
-4. Write a short description: what you built and why
-5. Tag a teammate to review
-6. Once they approve, click **Merge**
-
-### Protect the `main` Branch (Do This Once on GitHub)
-
-Go to: **GitHub Repo → Settings → Branches → Add branch rule for `main`**
-
-Check these boxes:
-- ✅ Require a pull request before merging
-- ✅ Require 1 approving review
-
-This prevents anyone from accidentally pushing broken code directly to `main`.
+1. **SECP Regulatory Compliance:** FundTracker Advanced is an educational and portfolio tracking tool designed to empower retail investors. All projections, tax estimates, Zakat calculations, and AI-generated insights are provided **for informational purposes only** and do not constitute legal financial, tax, or investment advice under Securities and Exchange Commission of Pakistan (SECP) regulations.
+2. **Shariah Zakat Reference:** Zakat computations adhere to the working capital methodology outlined in AAOIFI Shariah Standard No. 35. Users with specific fiqh questions are advised to consult their certified Islamic scholars.
+3. **Data Privacy Assurance:** FundTracker Advanced operates on a strict **local-first, zero-knowledge architecture**. Personal statements, account numbers, and financial balances remain on the local machine and are never transmitted to external cloud servers.
 
 ---
 
-## ⚠️ Critical Reminders
+*Built with passion for the **BanoQabil × Alibaba Cloud AI Hackathon** — Driving Financial Inclusion and Technological Empowerment in Pakistan.*
 
-| Rule | Why |
-|------|-----|
-| Never commit `.env` | It contains your Gemini API key — leaked keys get abused and charged |
-| Never commit `fundtracker.db` | Contains personal investment data |
-| Run `pip install -r requirements.txt` after pulling | Someone may have added a new Python package |
-| Run `npm install` after pulling | Someone may have added a new frontend package |
-| Run `playwright install chromium` once after setup | The scraper needs this browser binary to work |

@@ -5,15 +5,23 @@
 *.sqlite3
 fundtracker.db
 
-# ─── PDF Drop Folder (personal financial documents — never commit) ────────────
-# Each team member's PDFs live here locally. Never share these via Git.
+# ─── PDF Drop Folder & Demo Statements (never commit) ─────────────────────────
+# Each user's local PDFs and synthetic test statements live here locally.
 Fund Tracker PDF Data/
+demo_statements/
 
 # ─── Secret keys & environment variables ─────────────────────────────────────
-# IMPORTANT: Never commit .env — it contains your Gemini API key!
+# IMPORTANT: Never commit .env — it contains your DashScope or Gemini API keys!
 .env
 .env.local
 .env.*.local
+backend/.env
+
+# ─── Hackathon Portal Prep & Internal Agent Logs ─────────────────────────────
+.agents/
+submission_docs/
+submission_attachments/
+*.zip
 
 # ─── Python ──────────────────────────────────────────────────────────────────
 __pycache__/
