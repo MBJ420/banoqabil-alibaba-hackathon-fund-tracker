@@ -4,7 +4,7 @@ import client from '../api/client';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import ReactApexChart from 'react-apexcharts';
 import type { ApexOptions } from 'apexcharts';
-import { LogOut, LayoutDashboard, Database, TrendingUp, Zap, ArrowUpRight, Activity, Menu, Download, FileText, Sun, Moon, Calculator, Info, Search, UploadCloud, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Filter, Newspaper, Brain, Lightbulb, X, Eye, EyeOff, PiggyBank, Receipt, LineChart, HelpCircle, RefreshCw, Globe, Sparkles } from 'lucide-react';
+import { LogOut, LayoutDashboard, Database, TrendingUp, Zap, ArrowUpRight, Activity, Menu, Download, FileText, Sun, Moon, Scale, Info, Search, UploadCloud, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Filter, Newspaper, Brain, Lightbulb, X, Eye, EyeOff, PiggyBank, Receipt, LineChart, HelpCircle, RefreshCw, Globe, Sparkles } from 'lucide-react';
 
 import StatementUploadModal from '../components/StatementUploadModal';
 import PortfolioDataManagerModal from '../components/PortfolioDataManagerModal';
@@ -593,6 +593,18 @@ const Dashboard = () => {
                         />
                     </div>
 
+                    {/* SHARIAH WEALTH */}
+                    <div className="mb-6">
+                        <p className={`text-[10px] font-semibold text-text-secondary mb-2 px-3 tracking-wider ${!isSidebarOpen ? 'hidden' : 'block'}`}>SHARIAH WEALTH</p>
+                        <NavItem
+                            icon={<Scale size={20} className="text-amber-400" />}
+                            label={t('zakat_calc', 'Zakat Calculator')}
+                            active={isCalculatorModalOpen}
+                            isOpen={isSidebarOpen}
+                            onClick={() => setIsCalculatorModalOpen(true)}
+                        />
+                    </div>
+
                 </nav>
 
                 <div className="p-3 border-t border-[var(--color-white-5)]">
@@ -669,11 +681,6 @@ const Dashboard = () => {
                             <HelpCircle size={15} />
                             <span>{t('guide', 'Guide')}</span>
                         </button>
-                        <HeaderButton
-                            onClick={() => setIsCalculatorModalOpen(true)}
-                            icon={<Calculator size={16} />}
-                            label={t('zakat_calc', 'Zakat Calc')}
-                        />
                         <HeaderButton
                             onClick={handleExportCSV}
                             icon={<Download size={16} />}
